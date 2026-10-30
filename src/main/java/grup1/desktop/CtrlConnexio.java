@@ -20,12 +20,14 @@ public class CtrlConnexio {
 
     @FXML
     private void initialize() {
-
+        ComboBoxUbicacion.getItems().addAll(
+            "Taquilla","Puerta","Oficina"
+        );
     }
 
     @FXML // Al pulsar el boton de conectar
     private void onConnecta() {
-        
+        Main.connectToServer();
     }
 
     public String getComboBoxValue() { //Para coger el valor de la combo box 
