@@ -8,8 +8,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Text?>
 
+<!--En el fx controller del Vbox, es de ejemplo, cambiar cuando este hecho el servidor -->
 
-<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1">
+<VBox fx:controller="com.platea.desktop.CtrlConnexio "alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <Text strokeType="OUTSIDE" strokeWidth="0.0" text="PLATEA" />
       <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Connexió al servidor" />
@@ -18,17 +19,17 @@
             <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
                <children>
                   <Label text="Ubicació" />
-                  <ComboBox prefWidth="150.0" visibleRowCount="3" />
+                  <ComboBox fx:id="ComboBoxUbicacion" prefWidth="150.0" visibleRowCount="3" />
                </children>
             </HBox>
             <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
                <children>
                   <Label text="Servidor" />
-                  <TextField />
+                  <TextField fx:id="TextServidor" />
                </children>
             </HBox>
          </children>
       </VBox>
-      <Button mnemonicParsing="false" text="Conecta" />
+      <Button fx:id="buttonConnecta" mnemonicParsing="false" text="Conecta" onAction="#onConnecta" />
    </children>
 </VBox>
