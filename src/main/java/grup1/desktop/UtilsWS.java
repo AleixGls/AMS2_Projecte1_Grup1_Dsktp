@@ -30,6 +30,8 @@ public class UtilsWS { // Clase encargada de gestionar la conexion Cliente-Servi
                 webSocket.request(1);
             }
 
+            
+
             @Override
             public void onError(WebSocket webSocket, Throwable error) { //Cuando hay algun error en la conexion 
                 System.err.println("Error WebSocket: " + error.getMessage());
