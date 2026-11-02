@@ -27,6 +27,8 @@ public class ConfigManager { //Clase para generar CONFIG.XML
             elmRoot.appendChild(elmUbicacion);
             elmRoot.appendChild(elmServidor);
 
+            
+
 
 
         } catch (ParserConfigurationException p) {

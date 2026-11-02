@@ -5,11 +5,15 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import grup1.desktop.UtilsWS;
+
+
 import javafx.fxml.FXMLLoader;
 
 public class Main extends Application {
 
     public static CtrlConnexio ctrlConnexio;
+    public static UtilsWS utilsWS = new UtilsWS();
     public static void main(String[] args) {
         launch(args);
     }
@@ -25,7 +29,19 @@ public class Main extends Application {
         // En el resto de comprobaciones, miramos que no este vacio ni con unicamente espacios */
         if (location == null || location.isBlank() || server.isBlank()) { 
             System.out.println("Rellena los campos");
+            return ;
         }
+
+        utilsWS.connect(serverUrl,
+        ws -> {
+            System.out.println("La conexion se ha establecido con exito ");
+        },
+        error -> {
+            System.out.println("La conexion ha fallado");
+        }
+    );
+
+        
 
     }
 
