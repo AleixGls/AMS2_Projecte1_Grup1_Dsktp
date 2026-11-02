@@ -35,14 +35,14 @@ public class Main extends Application {
         }
 
         utilsWS.connect(serverUrl,
-        ws -> {
+        ws -> { //En caso de que conecte bien al servidor 
             System.out.println("La conexion se ha establecido con exito ");
             ConfigManager.updateConfigXML(location, server);
             Platform.runLater(() -> obrirLlistatVendes()); 
             // Ejecutamos el cambio de vista en el hilo de JavaFX
 
         },
-        error -> {
+        error -> { //Caso en el que no conecte al servidor 
             System.out.println("La conexion ha fallado");
         }
     );
@@ -63,7 +63,7 @@ public class Main extends Application {
 
         Parent root = fxmlLoader.load(); //Contstruye la interfaz
 
-        ctrlConnexio = fxmlLoader.getController();
+        ctrlConnexio = fxmlLoader.getController(); 
 
         Scene scene = new Scene(root); //Creamos la escena
 
