@@ -3,6 +3,7 @@ package grup1.desktop;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 import java.util.function.Consumer;
@@ -30,6 +31,14 @@ public class UtilsWS { // Clase encargada de gestionar la conexion Cliente-Servi
                 webSocket.request(1);
             }
 
+            //Metodo que recibira el JSON del servidor 
+            @Override
+            public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+                System.out.println("Mensaje recibido del servidor: " + data);
+                webSocket.request(1);
+                return CompletableFuture.completedFuture(null);
+            }
+
             @Override
             public void onError(WebSocket webSocket, Throwable error) { //Cuando hay algun error en la conexion 
                 System.err.println("Error WebSocket: " + error.getMessage());
@@ -37,9 +46,9 @@ public class UtilsWS { // Clase encargada de gestionar la conexion Cliente-Servi
 
             @Override
             public CompletionStage<?> onClose( //Cuando se cierra la conexion 
-                    WebSocket webSocket, int statusCode, String reason) {
-                System.out.println("Conexión cerrada: " + reason);
-                return java.util.concurrent.CompletableFuture.completedFuture(null);
+                WebSocket webSocket, int statusCode, String reason) {
+                    System.out.println("Conexión cerrada: " + reason);
+                    return java.util.concurrent.CompletableFuture.completedFuture(null);
             }
         };
 

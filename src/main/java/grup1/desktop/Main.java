@@ -5,7 +5,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-import grup1.desktop.UtilsWS;
+import javafx.application.Platform;
 
 
 import javafx.fxml.FXMLLoader;
@@ -14,6 +14,8 @@ public class Main extends Application {
 
     public static CtrlConnexio ctrlConnexio;
     public static UtilsWS utilsWS = new UtilsWS();
+
+    private static Stage stagePrincipal;
     public static void main(String[] args) {
         launch(args);
     }
@@ -33,12 +35,14 @@ public class Main extends Application {
         }
 
         utilsWS.connect(serverUrl,
-        ws -> {
+        ws -> { //En caso de que conecte bien al servidor 
             System.out.println("La conexion se ha establecido con exito ");
             ConfigManager.updateConfigXML(location, server);
+            Platform.runLater(() -> obrirLlistatVendes()); 
+            // Ejecutamos el cambio de vista en el hilo de JavaFX
 
         },
-        error -> {
+        error -> { //Caso en el que no conecte al servidor 
             System.out.println("La conexion ha fallado");
         }
     );
@@ -49,6 +53,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage stage) throws Exception { //Este metodo consigue que al ejectuar el codigo aparezca la interfaz grafica
+        stagePrincipal = stage;
         final int windowWidth = 1000;
         final int windowHeight = 700;
 
@@ -58,7 +63,7 @@ public class Main extends Application {
 
         Parent root = fxmlLoader.load(); //Contstruye la interfaz
 
-        ctrlConnexio = fxmlLoader.getController();
+        ctrlConnexio = fxmlLoader.getController(); 
 
         Scene scene = new Scene(root); //Creamos la escena
 
@@ -67,6 +72,22 @@ public class Main extends Application {
         stage.setMinWidth(windowWidth);
         stage.setMinHeight(windowHeight);
         stage.show();
+    }
+
+    public static void obrirLlistatVendes() { 
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                Main.class.getResource("/assets/events.fxml")
+            );
+
+            Parent root = fxmlLoader.load();
+            Scene scene = new Scene(root);
+
+            stagePrincipal.setScene(scene);
+            stagePrincipal.setTitle("Llistat de vendes");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     
