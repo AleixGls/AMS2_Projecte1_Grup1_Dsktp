@@ -1,0 +1,5 @@
+Windows: .\run.ps1
+
+macOS / Linux: 
+1. chmod +x run.sh 
+./run.sh
