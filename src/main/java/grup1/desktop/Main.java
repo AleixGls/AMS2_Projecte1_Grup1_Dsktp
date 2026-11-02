@@ -35,6 +35,8 @@ public class Main extends Application {
         utilsWS.connect(serverUrl,
         ws -> {
             System.out.println("La conexion se ha establecido con exito ");
+            ConfigManager.updateConfigXML(location, server);
+
         },
         error -> {
             System.out.println("La conexion ha fallado");
