@@ -1,65 +1,235 @@
+
 package grup1.desktop;
 
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-public class UtilsWS { // Clase encargada de gestionar la conexion Cliente-Servidor
+public class UtilsWS {
+
     private final HttpClient client;
-    private WebSocket webSocket; 
+    private volatile WebSocket webSocket;
+
+    // Metodo que recibira el catalogo del servidor
+    private Consumer<String> onCatalogo;
 
     public UtilsWS() {
+
+        // Crear el cliente HTTP
         client = HttpClient.newHttpClient();
     }
 
-    //*onSuccess se ejeutara cuando se conecte correctamente al server
-    // onFailure se ejecutara al fallar la conexion */
+    // Indicar quien recibira el catalogo
+    public void setOnCatalogo(Consumer<String> onCatalogo) {
+        this.onCatalogo = onCatalogo;
+    }
 
-    public void connect(String serverUrl, Consumer<WebSocket> onSuccess, Consumer<Throwable> onFailure) {
-        WebSocket.Listener listener = new WebSocket.Listener() { //Creamos un listener de websockets
+    // Conectar con el servidor WebSocket
+    public void connect(
+            String serverUrl,
+            Consumer<WebSocket> onSuccess,
+            Consumer<Throwable> onFailure) {
+
+        // Controlar que el resultado solo se ejecute una vez
+        AtomicBoolean finalizado = new AtomicBoolean(false);
+
+        StringBuilder mensajeRecibido = new StringBuilder();
+
+        // Gestionar errores
+        Consumer<Throwable> fallar = error -> {
+
+            if (finalizado.compareAndSet(false, true)) {
+                onFailure.accept(error);
+            }
+        };
+
+        // Escuchar los acontecimientos del WebSocket
+        WebSocket.Listener listener = new WebSocket.Listener() {
+
             @Override
-            public void onOpen(WebSocket webSocket) { //Se ejecuta cuando se establece la conexion 
+            public void onOpen(WebSocket webSocket) {
+
+                // Guardar la conexion
                 UtilsWS.this.webSocket = webSocket;
-                onSuccess.accept(webSocket); //Notificas el exito de la conexion 
 
-                System.out.println("Conexión WebSocket establecida.");
+                System.out.println("WebSocket conectado.");
 
+                // Solicitar mensajes al servidor
                 webSocket.request(1);
+
+                // Enviar PING para comprobar la conexion
+                webSocket.sendText(
+                        "{\"type\":\"ping\"}",
+                        true
+                ).whenComplete((resultado, error) -> {
+
+                    if (error != null) {
+                        fallar.accept(error);
+                        webSocket.abort();
+                    }
+                });
+
+                // Esperar como maximo 8 segundos la respuesta
+                CompletableFuture.delayedExecutor(
+                        8, TimeUnit.SECONDS
+                ).execute(() -> {
+
+                    if (finalizado.compareAndSet(false, true)) {
+
+                        onFailure.accept(
+                                new TimeoutException(
+                                        "El servidor no ha respondido."
+                                )
+                        );
+
+                        webSocket.abort();
+                    }
+                });
             }
 
-            //Metodo que recibira el JSON del servidor 
+            // Recibir mensajes del servidor
             @Override
-            public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-                System.out.println("Mensaje recibido del servidor: " + data);
+            public CompletionStage<?> onText(
+                    WebSocket webSocket,
+                    CharSequence data,
+                    boolean last) {
+
+                // Guardar el mensaje recibido
+                mensajeRecibido.append(data);
+
+                if (last) {
+
+                    String mensaje = mensajeRecibido.toString();
+                    mensajeRecibido.setLength(0);
+
+                    System.out.println("Mensaje recibido: " + mensaje);
+
+                    // Comprobar si el servidor ha respondido PONG
+                    if (mensaje.contains("\"type\":\"pong\"")) {
+
+                        if (finalizado.compareAndSet(false, true)) {
+
+                            System.out.println("PONG recibido correctamente.");
+
+                            onSuccess.accept(webSocket);
+                        }
+
+                    // Comprobar si hemos recibido el catalogo
+                    } else if (mensaje.contains("\"recintes\"")
+                            && mensaje.contains("\"esdeveniments\"")) {
+
+                        System.out.println("Catalogo recibido correctamente.");
+
+                        if (onCatalogo != null) {
+                            onCatalogo.accept(mensaje);
+                        }
+
+                    // Comprobar si el servidor ha devuelto un error
+                    } else if (mensaje.contains("\"type\":\"error\"")) {
+
+                        System.err.println("Error del servidor: " + mensaje);
+
+                        if (!finalizado.get()) {
+                            fallar.accept(
+                                    new IllegalStateException(mensaje)
+                            );
+                        }
+
+                    } else {
+
+                        System.out.println("Respuesta no reconocida.");
+                    }
+                }
+
+                // Solicitar el siguiente mensaje
                 webSocket.request(1);
+
                 return CompletableFuture.completedFuture(null);
             }
 
             @Override
-            public void onError(WebSocket webSocket, Throwable error) { //Cuando hay algun error en la conexion 
+            public void onError(WebSocket webSocket, Throwable error) {
+
                 System.err.println("Error WebSocket: " + error.getMessage());
+
+                fallar.accept(error);
             }
 
             @Override
-            public CompletionStage<?> onClose( //Cuando se cierra la conexion 
-                WebSocket webSocket, int statusCode, String reason) {
-                    System.out.println("Conexión cerrada: " + reason);
-                    return java.util.concurrent.CompletableFuture.completedFuture(null);
+            public CompletionStage<?> onClose(
+                    WebSocket webSocket,
+                    int statusCode,
+                    String reason) {
+
+                System.out.println("Conexion cerrada: " + reason);
+
+                if (!finalizado.get()) {
+                    fallar.accept(
+                            new IllegalStateException(
+                                    "El servidor ha cerrado la conexion."
+                            )
+                    );
+                }
+
+                UtilsWS.this.webSocket = null;
+
+                return CompletableFuture.completedFuture(null);
             }
         };
 
-        client.newWebSocketBuilder() // Constructor de conexiones WebSocket
-            .buildAsync(java.net.URI.create(serverUrl), listener)
-            .exceptionally(error -> { //Esta parte se ejecuta si la operacion falla 
-                System.err.println("No se pudo conectar: " + error.getMessage());
-                onFailure.accept(error);
-                return null;
+        try {
+
+            // Construir la direccion del servidor
+            URI uri = URI.create(serverUrl);
+
+            System.out.println("Conectando a: " + uri);
+
+            // Iniciar la conexion
+            client.newWebSocketBuilder()
+                    .connectTimeout(Duration.ofSeconds(8))
+                    .buildAsync(uri, listener)
+                    .whenComplete((ws, error) -> {
+
+                        if (error != null) {
+                            fallar.accept(error);
+                        }
+                    });
+
+        } catch (Exception e) {
+
+            fallar.accept(e);
+        }
+    }
+
+    // Solicitar los eventos al servidor
+    public void solicitarEventos() {
+
+        if (webSocket != null) {
+
+            System.out.println("Solicitando eventos...");
+
+            webSocket.sendText(
+                    "{\"type\":\"getEvents\"}",
+                    true
+            ).whenComplete((resultado, error) -> {
+
+                if (error != null) {
+                    System.err.println(
+                            "Error solicitando eventos: " + error.getMessage()
+                    );
+                }
             });
+
+        } else {
+
+            System.err.println("No hay conexion con el servidor.");
+        }
     }
 }
-
-
