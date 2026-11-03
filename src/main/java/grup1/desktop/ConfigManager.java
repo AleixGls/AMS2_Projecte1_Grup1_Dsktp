@@ -1,110 +1,104 @@
+
 package grup1.desktop;
 
-
 import java.io.File;
-import java.io.IOException;
 
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.TransformerException;
-import org.xml.sax.SAXException;
 
-import org.w3c.dom.Text;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 
-public class ConfigManager { //Clase para generar CONFIG.XML
-    
-    public static void createConfigXML(String ubicacion, String servidor) {
-        try {
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document docConfigXML = dBuilder.newDocument();
+public class ConfigManager { // Clase para gestionar CONFIG.XML
 
-            Element elmRoot = docConfigXML.createElement("config");
-            docConfigXML.appendChild(elmRoot); //Metemos el elemento raiz config
-
-            Element elmUbicacion = docConfigXML.createElement("ubicacion"); //Ponemos el resto de campos dentro del root 
-            Element elmServidor = docConfigXML.createElement("servidor");
-            elmRoot.appendChild(elmUbicacion);
-            elmRoot.appendChild(elmServidor);
-
-            Text nodeUbicacion = docConfigXML.createTextNode(ubicacion);
-            Text nodeServidor = docConfigXML.createTextNode(servidor);
-
-            elmUbicacion.appendChild(nodeUbicacion); //Les damos valor a los campos ubicacion y servidor
-            elmServidor.appendChild(nodeServidor);
-
-
-
-            File configFile = new File("CONFIG.XML");
-
-            //Fabrica de transformadores 
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            // Creamos un transformador
-            Transformer transformer = transformerFactory.newTransformer();
-            //Creamos una instancia DOMSource a partir del documento XML
-            DOMSource source = new DOMSource(docConfigXML);
-
-            StreamResult result = new StreamResult(configFile);
-            //Transoforma el documento XML especificado por source y escribe el documento XML resultante al objeto especificado por result
-            transformer.transform(source, result);
-
-
-        } catch (ParserConfigurationException p) {
-            // No es pot crear el parser: és un error de programació
-            throw new IllegalStateException(p);
-        } catch (TransformerException t) {
-            t.printStackTrace();
-        }
-
+    // Clase para almacenar los datos recuperados de CONFIG.XML
+    public record Config(String ubicacion, String servidor) {
     }
 
-    public static void updateConfigXML(String ubicacion, String servidor) {
+    // Leer los datos guardados en CONFIG.XML
+    public static Config readConfig() {
+
         File configFile = new File("CONFIG.XML");
-        if (configFile.exists()) { //Si ya existe, actualizamos los campos
-            
-            try { 
-                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
 
-                Document doc = dBuilder.parse(configFile);
+        // Comprobar si existe el archivo de configuración
+        if (!configFile.exists()) {
+            return null;
+        }
 
-                doc.getElementsByTagName("ubicacion").item(0).setTextContent(ubicacion);
-                doc.getElementsByTagName("servidor").item(0).setTextContent(servidor); //Modificamos los campos a los nuevos introducidos
+        try {
 
+            Document doc = DocumentBuilderFactory.newInstance()
+                    .newDocumentBuilder()
+                    .parse(configFile);
 
-                TransformerFactory transformerFactory = TransformerFactory.newInstance();
-                Transformer transformer = transformerFactory.newTransformer();
-                DOMSource source = new DOMSource(doc);
-                StreamResult result = new StreamResult(configFile);
-                transformer.transform(source, result);
-                
+            // Obtener los campos de ubicación y servidor
+            NodeList ubicaciones = doc.getElementsByTagName("ubicacion");
+            NodeList servidores = doc.getElementsByTagName("servidor");
 
-            } catch (ParserConfigurationException p) {
-                // No es pot crear el parser: és un error de programació
-                throw new IllegalStateException(p);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (SAXException s) {
-                s.printStackTrace();
-            } catch (TransformerException t) {
-                t.printStackTrace();
-                return ; //Al fallar el guardado del archivo, no continua 
+            // Comprobar que existen los dos campos
+            if (ubicaciones.getLength() == 0 || servidores.getLength() == 0) {
+                return null;
             }
 
+            // Recuperar los valores almacenados
+            String ubicacion = ubicaciones.item(0).getTextContent().trim();
+            String servidor = servidores.item(0).getTextContent().trim();
 
+            return new Config(ubicacion, servidor);
 
-            
-        } else { //Si el xml no existe, lo creamos 
-            createConfigXML(ubicacion, servidor);
+        } catch (Exception e) {
+
+            System.err.println("Error leyendo CONFIG.XML: " + e.getMessage());
+            return null;
         }
     }
 
+    // Guardar o actualizar los datos de CONFIG.XML
+    public static void updateConfigXML(String ubicacion, String servidor) {
+
+        try {
+
+            // Crear un nuevo documento XML
+            Document doc = DocumentBuilderFactory.newInstance()
+                    .newDocumentBuilder()
+                    .newDocument();
+
+            // Crear el elemento raíz config
+            Element elmRoot = doc.createElement("config");
+            doc.appendChild(elmRoot);
+
+            // Crear el elemento ubicacion
+            Element elmUbicacion = doc.createElement("ubicacion");
+            elmUbicacion.setTextContent(ubicacion);
+            elmRoot.appendChild(elmUbicacion);
+
+            // Crear el elemento servidor
+            Element elmServidor = doc.createElement("servidor");
+            elmServidor.setTextContent(servidor);
+            elmRoot.appendChild(elmServidor);
+
+            // Guardar el documento XML en CONFIG.XML
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+
+            var transformer = transformerFactory.newTransformer();
+
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+
+            transformer.transform(
+                    new DOMSource(doc),
+                    new StreamResult(new File("CONFIG.XML"))
+            );
+
+        } catch (Exception e) {
+
+            throw new IllegalStateException(
+                    "No se pudo guardar CONFIG.XML", e
+            );
+        }
+    }
 }

@@ -23,12 +23,23 @@ public class CtrlConnexio {
         ComboBoxUbicacion.getItems().addAll(
             "Taquilla","Puerta","Oficina"
         );
+
+        // Recuperar la configuración guardada anteriormente
+        ConfigManager.Config config = ConfigManager.readConfig();
+
+        if (config != null) {
+
+            ComboBoxUbicacion.setValue(config.ubicacion());
+            TextServidor.setText(config.servidor());
+
+            System.out.println("Configuración recuperada correctamente.");
+        }
     }
 
     @FXML // Al pulsar el boton de conectar
     private void onConnecta() {
         Main.connectToServer();
-        
+
     }
 
     public String getComboBoxValue() { //Para coger el valor de la combo box 
@@ -39,5 +50,5 @@ public class CtrlConnexio {
         return TextServidor.getText();
     }
 
-    
+
 }

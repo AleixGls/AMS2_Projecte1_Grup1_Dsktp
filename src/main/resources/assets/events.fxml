@@ -1,34 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.BorderPane?>
-<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="grup1.desktop.CtrlLlistatVendes">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/21.0.6" xmlns:fx="http://javafx.com/fxml/1" fx:controller="grup1.desktop.CtrlLlistatVendes">
+
    <center>
-      <VBox alignment="CENTER" prefHeight="200.0" prefWidth="100.0" BorderPane.alignment="CENTER">
+      <VBox alignment="CENTER" prefHeight="700.0" prefWidth="1000.0" spacing="8.0" BorderPane.alignment="CENTER">
          <children>
-            <TableView fx:id="tableVendes" prefHeight="200.0" prefWidth="200.0">
+
+            <Label text="Esdeveniments" />
+
+            <TableView fx:id="tableEsdeveniments" prefHeight="300.0" prefWidth="1000.0">
               <columns>
-                <TableColumn fx:id="codiColumn" prefWidth="75.0" text="Codi" />
-                  <TableColumn fx:id="clientColumn" prefWidth="75.0" text="Client" />
-                <TableColumn fx:id="esdevenimentColumn" prefWidth="75.0" text="Esdeveniment" />
-                  <TableColumn fx:id="dataColumn" prefWidth="75.0" text="Data" />
-                  <TableColumn fx:id="entradesColumn" prefWidth="75.0" text="Entrades" />
-                  <TableColumn fx:id="totalColumn" prefWidth="75.0" text="Total" />
+                <TableColumn fx:id="idEventoColumn" prefWidth="80.0" text="ID" />
+                <TableColumn fx:id="nombreEventoColumn" prefWidth="300.0" text="Esdeveniment" />
+                <TableColumn fx:id="recintoEventoColumn" prefWidth="200.0" text="Recinte" />
+                <TableColumn fx:id="fechaEventoColumn" prefWidth="180.0" text="Data" />
+                <TableColumn fx:id="categoriaEventoColumn" prefWidth="150.0" text="Categoria" />
               </columns>
             </TableView>
+
+            <Label text="Tipus d'entrades" />
+
+            <TableView fx:id="tableTipusEntrades" prefHeight="300.0" prefWidth="1000.0">
+              <columns>
+                <TableColumn fx:id="idEntradaColumn" prefWidth="80.0" text="ID" />
+                <TableColumn fx:id="nombreEntradaColumn" prefWidth="250.0" text="Entrada" />
+                <TableColumn fx:id="zonaEntradaColumn" prefWidth="200.0" text="Zona" />
+                <TableColumn fx:id="preuEntradaColumn" prefWidth="150.0" text="Preu" />
+                <TableColumn fx:id="quotaEntradaColumn" prefWidth="150.0" text="Quota" />
+              </columns>
+            </TableView>
+
          </children>
       </VBox>
    </center>
-   <bottom>
-      <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-         <children>
-            <Button fx:id="buttonDetall" mnemonicParsing="false" text="Veure Detall" />
-         </children>
-      </HBox>
-   </bottom>
+
 </BorderPane>
