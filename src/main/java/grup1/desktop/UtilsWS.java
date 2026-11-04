@@ -12,10 +12,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import java.util.Map;
+import tools.jackson.databind.ObjectMapper;
+
 public class UtilsWS {
 
     private final HttpClient client;
     private volatile WebSocket webSocket;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // Metodo que recibira el catalogo del servidor
     private Consumer<String> onCatalogo;
@@ -66,8 +70,7 @@ public class UtilsWS {
 
                 // Enviar PING para comprobar la conexion
                 webSocket.sendText(
-                        "{\"type\":\"ping\"}",
-                        true
+                        "{\"type\":\"ping\"}",true
                 ).whenComplete((resultado, error) -> {
 
                     if (error != null) {
@@ -81,15 +84,15 @@ public class UtilsWS {
                         8, TimeUnit.SECONDS
                 ).execute(() -> {
 
-                    if (finalizado.compareAndSet(false, true)) {
+                    if (finalizado.compareAndSet(false, true)) { //Comprobamos si ya ha terminado la conexion 
 
-                        onFailure.accept(
+                        onFailure.accept( //Si hay un error, avisamos 
                                 new TimeoutException(
                                         "El servidor no ha respondido."
                                 )
                         );
 
-                        webSocket.abort();
+                        webSocket.abort(); //Interrumpimos la conexion 
                     }
                 });
             }
@@ -111,40 +114,52 @@ public class UtilsWS {
 
                     System.out.println("Mensaje recibido: " + mensaje);
 
-                    // Comprobar si el servidor ha respondido PONG
-                    if (mensaje.contains("\"type\":\"pong\"")) {
+                    try {
 
-                        if (finalizado.compareAndSet(false, true)) {
+                        // Convertir el mensaje recibido en un mapa
+                        Map<?, ?> respuesta = objectMapper.readValue(mensaje, Map.class);
 
-                            System.out.println("PONG recibido correctamente.");
+                        String tipo = String.valueOf(respuesta.get("type"));
 
-                            onSuccess.accept(webSocket);
-                        }
+                        // Comprobar si el servidor ha respondido PONG
+                        if ("pong".equals(tipo)) {
 
-                    // Comprobar si hemos recibido el catalogo
-                    } else if (mensaje.contains("\"recintes\"")
-                            && mensaje.contains("\"esdeveniments\"")) {
+                            if (finalizado.compareAndSet(false, true)) {
 
-                        System.out.println("Catalogo recibido correctamente.");
+                                System.out.println("PONG recibido correctamente.");
 
-                        if (onCatalogo != null) {
-                            onCatalogo.accept(mensaje);
-                        }
+                                onSuccess.accept(webSocket);
+                            }
 
-                    // Comprobar si el servidor ha devuelto un error
-                    } else if (mensaje.contains("\"type\":\"error\"")) {
+                        // Comprobar si hemos recibido el catalogo
+                        } else if ("catalog".equals(tipo)) {
 
-                        System.err.println("Error del servidor: " + mensaje);
+                            System.out.println("Catalogo recibido correctamente.");
 
-                        if (!finalizado.get()) {
-                            fallar.accept(
-                                    new IllegalStateException(mensaje)
+                            // Obtener solamente el contenido del catalogo
+                            String catalogo = objectMapper.writeValueAsString(
+                                    respuesta.get("catalog")
                             );
+
+                            if (onCatalogo != null) {
+                                onCatalogo.accept(catalogo);
+                            }
+
+                        // Comprobar si el servidor ha devuelto un error
+                        } else if ("error".equals(tipo)) {
+
+                            System.err.println(
+                                    "Error del servidor: " + respuesta.get("message")
+                            );
+
+                        } else {
+
+                            System.out.println("Respuesta no reconocida: " + tipo);
                         }
 
-                    } else {
+                    } catch (Exception e) {
 
-                        System.out.println("Respuesta no reconocida.");
+                        System.err.println("Error procesando JSON: " + e.getMessage());
                     }
                 }
 
@@ -216,7 +231,7 @@ public class UtilsWS {
             System.out.println("Solicitando eventos...");
 
             webSocket.sendText(
-                    "{\"type\":\"getEvents\"}",
+                    "{\"type\":\"cataleg\"}",
                     true
             ).whenComplete((resultado, error) -> {
 
