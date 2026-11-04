@@ -13,6 +13,7 @@ import javafx.scene.control.Alert;
 public class Main extends Application {
 
     public static CtrlConnexio ctrlConnexio;
+    public static CtrlLlistatVendes ctrlLlistatVendes;
     public static UtilsWS utilsWS = new UtilsWS();
 
     private static Stage stagePrincipal;
@@ -27,8 +28,7 @@ public class Main extends Application {
         String server = ctrlConnexio.getTextServidor();
 
         // Comprobar que los campos no esten vacios
-        if (location == null || location.isBlank()
-                || server == null || server.isBlank()) {
+        if (location == null || location.isBlank() || server == null || server.isBlank()) {
 
             mostrarAlerta(
                     Alert.AlertType.WARNING,
@@ -40,9 +40,18 @@ public class Main extends Application {
         }
 
         // Construir la direccion del servidor
-        String serverUrl = "ws://" + server.trim() + ":3000";
+        String serverUrl = "wss://" + server.trim();
 
         System.out.println("Conectando a: " + serverUrl);
+
+        // Indicar donde se mostraran los eventos recibidos
+        utilsWS.setOnCatalogo(json -> {
+
+            if (ctrlLlistatVendes != null) {
+                ctrlLlistatVendes.cargarCatalogo(json);
+            }
+
+        });
 
         utilsWS.connect(
                 serverUrl,
@@ -62,7 +71,7 @@ public class Main extends Application {
                     }
 
                     // Cambiar de pantalla en el hilo de JavaFX
-                    Platform.runLater(() -> obrirLlistatVendes());
+                    Platform.runLater(() -> obrirLlistatVendes());  
 
                 },
 
@@ -120,7 +129,6 @@ public class Main extends Application {
     }
 
     public static void obrirLlistatVendes() {
-
         try {
 
             FXMLLoader fxmlLoader = new FXMLLoader(
@@ -128,10 +136,17 @@ public class Main extends Application {
             );
 
             Parent root = fxmlLoader.load();
+
+            // Obtener el controlador de la pantalla
+            ctrlLlistatVendes = fxmlLoader.getController();
+
             Scene scene = new Scene(root);
 
             stagePrincipal.setScene(scene);
             stagePrincipal.setTitle("Llistat de vendes");
+
+            // Solicitar el catalogo al servidor
+            utilsWS.solicitarEventos();
 
         } catch (Exception e) {
 
