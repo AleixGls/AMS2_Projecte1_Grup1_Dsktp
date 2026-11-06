@@ -9,6 +9,8 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
@@ -34,6 +36,9 @@ public class CtrlLlistatVendes {
 
     @FXML
     private TableColumn<Esdeveniment, String> categoriaEventoColumn;
+
+    @FXML
+    private TableColumn<Esdeveniment, Void> entradasEventoColumn;
 
     @FXML
     private TableView<TipusEntrada> tableTipusEntrades;
@@ -91,7 +96,35 @@ public class CtrlLlistatVendes {
                 fila -> new ReadOnlyStringWrapper(fila.getValue().categoria())
         );
 
+        //////////
+        // Configurar la columna de botones
+        entradasEventoColumn.setCellFactory(columna -> new TableCell<>() {
 
+            private final Button button = new Button("Ver mapa");
+            
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+
+                if(empty) {
+                        setGraphic(null);
+                } else {
+                        button.setOnAction(event -> {
+                                System.out.println("Boton pulsado");
+                                Esdeveniment esdeveniment = getTableRow().getItem();
+
+                                if(esdeveniment != null) {
+                                        Main.abrirMapa(esdeveniment);
+                                }
+                        });
+                        setGraphic(button);
+                }
+            }
+
+        });
+
+        ///////////
         // Configurar las columnas de tipos de entrada
         idEntradaColumn.setCellValueFactory(
                 fila -> new ReadOnlyStringWrapper(fila.getValue().id())
@@ -130,9 +163,7 @@ public class CtrlLlistatVendes {
 
                     mostrarEntradas(seleccionado);
                 });
-
     }
-
 
 
     // Recibir y procesar el JSON del servidor
@@ -291,6 +322,4 @@ public class CtrlLlistatVendes {
             int quota
     ) {
     }
-
-
 }

@@ -159,4 +159,47 @@ public class Main extends Application {
             );
         }
     }
+
+    
+    // Abrir la ventana del mapa del recinto
+    public static void abrirMapa(CtrlLlistatVendes.Esdeveniment esdeveniment) {
+
+        try {
+
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                    Main.class.getResource("/assets/mapa.fxml")
+            );
+
+            Parent root = fxmlLoader.load();
+
+            // Obtener el controlador de la ventana
+            CtrlMapa ctrlMapa = fxmlLoader.getController();
+
+            // Pasar el evento seleccionado
+            ctrlMapa.setEsdeveniment(esdeveniment);
+
+            // Crear una nueva ventana
+            Stage stageMapa = new Stage();
+
+            stageMapa.setTitle("Mapa del recinto");
+            stageMapa.setScene(new Scene(root));
+            stageMapa.setMinWidth(900);
+            stageMapa.setMinHeight(600);
+
+            stageMapa.initOwner(stagePrincipal);
+
+            stageMapa.show();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Error de interfaz",
+                    "No se ha podido abrir el mapa del recinto."
+            );
+        }
+    }
+
 }

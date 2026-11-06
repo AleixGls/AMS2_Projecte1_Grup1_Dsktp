@@ -6,7 +6,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/21.0.6" xmlns:fx="http://javafx.com/fxml/1" fx:controller="grup1.desktop.CtrlLlistatVendes">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="grup1.desktop.CtrlLlistatVendes">
 
    <center>
       <VBox alignment="CENTER" prefHeight="700.0" prefWidth="1000.0" spacing="8.0" BorderPane.alignment="CENTER">
@@ -21,6 +21,7 @@
                 <TableColumn fx:id="recintoEventoColumn" prefWidth="200.0" text="Recinte" />
                 <TableColumn fx:id="fechaEventoColumn" prefWidth="180.0" text="Data" />
                 <TableColumn fx:id="categoriaEventoColumn" prefWidth="150.0" text="Categoria" />
+                  <TableColumn fx:id="entradasEventoColumn" prefWidth="75.0" text="Ver entradas" />
               </columns>
             </TableView>
 
