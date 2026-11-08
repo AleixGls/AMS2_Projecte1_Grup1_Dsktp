@@ -175,8 +175,13 @@ public class Main extends Application {
             // Obtener el controlador de la ventana
             CtrlMapa ctrlMapa = fxmlLoader.getController();
 
-            // Pasar el evento seleccionado
-            ctrlMapa.setEsdeveniment(esdeveniment);
+            // Obtener el nombre del recinto
+            String nombreRecinto = ctrlLlistatVendes.obtenerNombreRecinto(
+                esdeveniment.recinte()
+            );
+
+            // Pasar la información al controlador del mapa
+            ctrlMapa.setEsdeveniment(esdeveniment, nombreRecinto);
 
             // Crear una nueva ventana
             Stage stageMapa = new Stage();
