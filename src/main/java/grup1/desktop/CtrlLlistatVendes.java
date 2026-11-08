@@ -9,6 +9,8 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 
@@ -34,6 +36,9 @@ public class CtrlLlistatVendes {
 
     @FXML
     private TableColumn<Esdeveniment, String> categoriaEventoColumn;
+
+    @FXML
+    private TableColumn<Esdeveniment, Void> entradasEventoColumn;
 
     @FXML
     private TableView<TipusEntrada> tableTipusEntrades;
@@ -67,83 +72,107 @@ public class CtrlLlistatVendes {
 
         // Configurar las columnas de eventos
         idEventoColumn.setCellValueFactory(
-                fila -> new ReadOnlyStringWrapper(fila.getValue().id())
+			fila -> new ReadOnlyStringWrapper(fila.getValue().id())
         );
 
         nombreEventoColumn.setCellValueFactory(
-                fila -> new ReadOnlyStringWrapper(fila.getValue().nom())
+			fila -> new ReadOnlyStringWrapper(fila.getValue().nom())
         );
 
         recintoEventoColumn.setCellValueFactory(
-                fila -> new ReadOnlyStringWrapper(
-                        nombresRecintos.getOrDefault(
-                                fila.getValue().recinte(),
-                                fila.getValue().recinte()
-                        )
-                )
+			fila -> new ReadOnlyStringWrapper(
+					nombresRecintos.getOrDefault(
+							fila.getValue().recinte(),
+							fila.getValue().recinte()
+					)
+			)
         );
 
         fechaEventoColumn.setCellValueFactory(
-                fila -> new ReadOnlyStringWrapper(fila.getValue().dataHora())
+			fila -> new ReadOnlyStringWrapper(fila.getValue().dataHora())
         );
 
         categoriaEventoColumn.setCellValueFactory(
-                fila -> new ReadOnlyStringWrapper(fila.getValue().categoria())
+			fila -> new ReadOnlyStringWrapper(fila.getValue().categoria())
         );
 
+        //////////
+        // Configurar la columna de botones
+        entradasEventoColumn.setCellFactory(columna -> new TableCell<>() {
 
+            private final Button button = new Button("Ver mapa");
+            
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+
+                if(empty) {
+					setGraphic(null);
+                } else {
+					button.setOnAction(event -> {
+						System.out.println("Boton pulsado");
+						Esdeveniment esdeveniment = getTableRow().getItem();
+
+						if(esdeveniment != null) {
+								Main.abrirMapa(esdeveniment);
+						}
+					});
+					setGraphic(button);
+                }
+            }
+
+        });
+
+        ///////////
         // Configurar las columnas de tipos de entrada
         idEntradaColumn.setCellValueFactory(
-                fila -> new ReadOnlyStringWrapper(fila.getValue().id())
+			fila -> new ReadOnlyStringWrapper(fila.getValue().id())
         );
 
         nombreEntradaColumn.setCellValueFactory(
-                fila -> new ReadOnlyStringWrapper(fila.getValue().nom())
+			fila -> new ReadOnlyStringWrapper(fila.getValue().nom())
         );
 
         zonaEntradaColumn.setCellValueFactory(
-                fila -> new ReadOnlyStringWrapper(
-                        nombresZonas.getOrDefault(
-                                fila.getValue().zona(),
-                                fila.getValue().zona()
-                        )
-                )
+			fila -> new ReadOnlyStringWrapper(
+				nombresZonas.getOrDefault(
+					fila.getValue().zona(),
+					fila.getValue().zona()
+				)
+			)
         );
 
         preuEntradaColumn.setCellValueFactory(
-                fila -> new ReadOnlyStringWrapper(
-                        fila.getValue().preu() + " €"
-                )
+			fila -> new ReadOnlyStringWrapper(
+				fila.getValue().preu() + " €"
+			)
         );
 
         quotaEntradaColumn.setCellValueFactory(
-                fila -> new ReadOnlyStringWrapper(
-                        String.valueOf(fila.getValue().quota())
-                )
+			fila -> new ReadOnlyStringWrapper(
+				String.valueOf(fila.getValue().quota())
+			)
         );
 
 
         // Cuando se selecciona un evento, mostrar sus entradas
         tableEsdeveniments.getSelectionModel()
-                .selectedItemProperty()
-                .addListener((observable, anterior, seleccionado) -> {
-
-                    mostrarEntradas(seleccionado);
-                });
-
+			.selectedItemProperty()
+			.addListener((observable, anterior, seleccionado) -> {
+				mostrarEntradas(seleccionado);
+			});
     }
-
 
 
     // Recibir y procesar el JSON del servidor
     public void cargarCatalogo(String json) {
-
         try {
 
             // Convertir el JSON en un objeto Catalogo
             Catalogo catalogo = objectMapper.readValue(
-                    json,
-                    Catalogo.class
+				json,
+				Catalogo.class
             );
 
             if (catalogo == null) {
@@ -157,21 +186,17 @@ public class CtrlLlistatVendes {
                 nombresZonas.clear();
 
                 if (catalogo.recintes() != null) {
-
                     for (Recinte recinte : catalogo.recintes()) {
-
                         nombresRecintos.put(
-                                recinte.id(),
-                                recinte.nom()
+							recinte.id(),
+							recinte.nom()
                         );
 
                         if (recinte.zones() != null) {
-
                             for (Zona zona : recinte.zones()) {
-
                                 nombresZonas.put(
-                                        zona.id(),
-                                        zona.nom()
+									zona.id(),
+									zona.nom()
                                 );
                             }
                         }
@@ -180,12 +205,12 @@ public class CtrlLlistatVendes {
 
                 // Cargar los eventos en la tabla
                 List<Esdeveniment> esdeveniments =
-                        catalogo.esdeveniments() != null
-                                ? catalogo.esdeveniments()
-                                : List.of();
+					catalogo.esdeveniments() != null
+						? catalogo.esdeveniments()
+						: List.of();
 
                 tableEsdeveniments.setItems(
-                        FXCollections.observableArrayList(esdeveniments)
+					FXCollections.observableArrayList(esdeveniments)
                 );
 
                 // Limpiar las entradas anteriores
@@ -193,25 +218,22 @@ public class CtrlLlistatVendes {
 
                 // Seleccionar el primer evento si existe
                 if (!esdeveniments.isEmpty()) {
-
                     tableEsdeveniments.getSelectionModel().selectFirst();
                 }
             };
 
             // Actualizar la interfaz desde el hilo de JavaFX
             if (Platform.isFxApplicationThread()) {
-
                 actualizar.run();
 
             } else {
-
                 Platform.runLater(actualizar);
             }
 
         } catch (Exception e) {
 
             System.err.println(
-                    "Error procesando el catalogo: " + e.getMessage()
+				"Error procesando el catalogo: " + e.getMessage()
             );
 
             Platform.runLater(() -> {
@@ -234,16 +256,16 @@ public class CtrlLlistatVendes {
         if (esdeveniment == null || esdeveniment.tipusEntrades() == null) {
 
             tableTipusEntrades.setItems(
-                    FXCollections.observableArrayList()
+				FXCollections.observableArrayList()
             );
 
             return;
         }
 
         tableTipusEntrades.setItems(
-                FXCollections.observableArrayList(
-                        esdeveniment.tipusEntrades()
-                )
+			FXCollections.observableArrayList(
+					esdeveniment.tipusEntrades()
+			)
         );
     }
 
@@ -251,46 +273,50 @@ public class CtrlLlistatVendes {
     // Estructuras para recibir los datos del JSON
 
     public record Catalogo(
-            List<Recinte> recintes,
-            List<Esdeveniment> esdeveniments
+		List<Recinte> recintes,
+		List<Esdeveniment> esdeveniments
     ) {
     }
 
     public record Recinte(
-            String id,
-            String nom,
-            List<Zona> zones
+		String id,
+		String nom,
+		List<Zona> zones
     ) {
     }
 
     public record Zona(
-            String id,
-            String nom,
-            String tipus,
-            int aforament
+		String id,
+		String nom,
+		String tipus,
+		int aforament
     ) {
     }
 
     public record Esdeveniment(
-            String id,
-            String recinte,
-            String nom,
-            String dataHora,
-            String categoria,
-            String descripcio,
-            String imatge,
-            List<TipusEntrada> tipusEntrades
+		String id,
+		String recinte,
+		String nom,
+		String dataHora,
+		String categoria,
+		String descripcio,
+		String imatge,
+		List<TipusEntrada> tipusEntrades
     ) {
     }
 
     public record TipusEntrada(
-            String id,
-            String nom,
-            String zona,
-            double preu,
-            int quota
+		String id,
+		String nom,
+		String zona,
+		double preu,
+		int quota
     ) {
     }
 
 
+    // Obtener el nombre de un recinto mediante su ID
+	public String obtenerNombreRecinto(String idRecinto) {
+		return nombresRecintos.getOrDefault(idRecinto, idRecinto);
+	}
 }
