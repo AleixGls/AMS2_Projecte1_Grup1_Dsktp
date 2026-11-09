@@ -1,14 +1,12 @@
-
 package grup1.desktop;
 
 import javafx.application.Application;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.stage.Stage;
 
 public class Main extends Application {
 
@@ -40,7 +38,7 @@ public class Main extends Application {
         }
 
         // Construir la direccion del servidor
-        String serverUrl = "wss://" + server.trim();
+        String serverUrl = "ws://" + server.trim();
 
         System.out.println("Conectando a: " + serverUrl);
 
@@ -71,7 +69,7 @@ public class Main extends Application {
                     }
 
                     // Cambiar de pantalla en el hilo de JavaFX
-                    Platform.runLater(() -> obrirLlistatVendes());  
+                    Platform.runLater(() -> obrirLlistatVendes());
 
                 },
 
@@ -111,15 +109,15 @@ public class Main extends Application {
         final int windowWidth = 1000;
         final int windowHeight = 700;
 
-        FXMLLoader fxmlLoader = new FXMLLoader( // Cargamos la interfaz grafica
+        FXMLLoader fxmlLoader = new FXMLLoader(
                 getClass().getResource("/assets/connecta.fxml")
         );
 
-        Parent root = fxmlLoader.load(); // Construye la interfaz
+        Parent root = fxmlLoader.load();
 
         ctrlConnexio = fxmlLoader.getController();
 
-        Scene scene = new Scene(root); // Creamos la escena
+        Scene scene = new Scene(root);
 
         stage.setScene(scene);
         stage.setTitle("Portal de conexión");
@@ -129,6 +127,7 @@ public class Main extends Application {
     }
 
     public static void obrirLlistatVendes() {
+
         try {
 
             FXMLLoader fxmlLoader = new FXMLLoader(
@@ -160,7 +159,6 @@ public class Main extends Application {
         }
     }
 
-    
     // Abrir la ventana del mapa del recinto
     public static void abrirMapa(CtrlLlistatVendes.Esdeveniment esdeveniment) {
 
@@ -176,19 +174,22 @@ public class Main extends Application {
             CtrlMapa ctrlMapa = fxmlLoader.getController();
 
             // Obtener el recinto completo
-            CtrlLlistatVendes.Recinte recinto = ctrlLlistatVendes.obtenerRecinto(esdeveniment.recinte());
+            CtrlLlistatVendes.Recinte recinto =
+                    ctrlLlistatVendes.obtenerRecinto(esdeveniment.recinte());
 
             // Comprobar que existe
             if (recinto == null) {
+
                 mostrarAlerta(
-                    Alert.AlertType.ERROR,
-                    "Error",
-                    "No se ha encontrado el recinto del evento."
+                        Alert.AlertType.ERROR,
+                        "Error",
+                        "No se ha encontrado el recinto del evento."
                 );
+
                 return;
             }
 
-            // Pasar la información al controlador del mapa
+            // Pasar la informacion del evento y del recinto al controlador
             ctrlMapa.setEsdeveniment(esdeveniment, recinto);
 
             // Crear una nueva ventana
@@ -201,7 +202,35 @@ public class Main extends Application {
 
             stageMapa.initOwner(stagePrincipal);
 
+            // Mostrar la ventana
             stageMapa.show();
+
+            // Solicitar al servidor los datos reales del mapa
+            utilsWS.solicitarMapa(
+                    esdeveniment.id(),
+
+                    json -> {
+
+                        // Los cambios de interfaz deben hacerse en el hilo de JavaFX
+                        Platform.runLater(() -> {
+
+                            // Cargar los asientos y la ocupacion recibidos del servidor
+                            ctrlMapa.cargarMapa(json);
+
+                        });
+
+                    },
+
+                    error -> {
+
+                        Platform.runLater(() -> mostrarAlerta(
+                                Alert.AlertType.ERROR,
+                                "Error al cargar el mapa",
+                                error
+                        ));
+
+                    }
+            );
 
         } catch (Exception e) {
 
