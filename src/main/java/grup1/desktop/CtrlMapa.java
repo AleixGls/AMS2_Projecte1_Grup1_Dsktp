@@ -30,7 +30,7 @@ public class CtrlMapa {
     }
 
     // De momento probaremos con una sala pequeña
-    private TamanoSala tamanoSala = TamanoSala.GRANDE;
+    private TamanoSala tamanoSala = TamanoSala.MEDIANA;
 
     // Todas las salas tendrán 5 filas
     private final int FILAS = 5;
@@ -74,10 +74,18 @@ public class CtrlMapa {
     @FXML
     private Label lblEstado;
 
+    @FXML
+    private Label lblOcupacionNumerada;
+
+    @FXML
+    private Label lblOcupacionGeneral;
+
 
     @FXML
     private void initialize() {
         dibujarAsientosPrueba();
+
+        actualizarOcupacionZonas();
 
         // Detectar los clics sobre el Canvas
         canvasMapa.setOnMouseClicked(event -> {
@@ -262,6 +270,37 @@ public class CtrlMapa {
         }
 
         System.out.println("No se ha seleccionado ningún asiento.");
+    }
+
+    private void actualizarOcupacionZonas() {
+        // Contar los asientos vendidos de la zona numerada
+        int ocupadosNumerada = 0;
+
+        for (Asiento asiento : asientos) {
+            if ("Z1".equals(asiento.idZona()) && asiento.vendido()) {
+                ocupadosNumerada++;
+            }
+        }
+
+        // Calcular el aforo de cada zona
+        int aforoNumerada = FILAS * obtenerColumnas();
+        int aforoGeneral = obtenerAforoGeneral();
+
+        // Ocupación ficticia de la zona general
+        int ocupadosGeneral = switch (tamanoSala) {
+            case PEQUENA -> 8;
+            case MEDIANA -> 15;
+            case GRANDE -> 25;
+        };
+
+        // Actualizar los Labels
+        lblOcupacionNumerada.setText(
+            "Numerada: " + ocupadosNumerada + "/" + aforoNumerada
+        );
+
+        lblOcupacionGeneral.setText(
+            "General: " + ocupadosGeneral + "/" + aforoGeneral
+        );
     }
 
     // Limpiar los datos de la venta

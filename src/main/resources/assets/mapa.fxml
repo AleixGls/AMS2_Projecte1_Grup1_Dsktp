@@ -29,7 +29,11 @@
          <children>
             <Label text="Ocupación por zonas" />
             <Separator prefWidth="200.0" />
-            <VBox fx:id="contenedorOcupacionZonas" prefHeight="200.0" prefWidth="100.0" />
+            <VBox fx:id="contenedorOcupacionZonas" prefHeight="200.0" prefWidth="100.0">
+               <children>
+                  <Label fx:id="lblOcupacionNumerada" text="Numerada: -/-&quot;" />
+                  <Label fx:id="lblOcupacionGeneral" text="General: -/-&quot;" />
+               </children></VBox>
             <Separator prefWidth="200.0" />
             <Label text="Detalle de venta" />
             <GridPane prefWidth="290.0">
