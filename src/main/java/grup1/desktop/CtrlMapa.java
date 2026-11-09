@@ -15,6 +15,13 @@ public class CtrlMapa {
     // Evento seleccionado desde el listado
     private CtrlLlistatVendes.Esdeveniment esdeveniment;
 
+    // Recinto seleccionado desde el listado
+    private CtrlLlistatVendes.Recinte recinto;
+
+    // Zonas del recinto seleccionado
+    private CtrlLlistatVendes.Zona zonaNumerada;
+    private CtrlLlistatVendes.Zona zonaGeneral;
+
     // Lista de asientos del recinto
     private final List<Asiento> asientos = new ArrayList<>();
 
@@ -24,13 +31,9 @@ public class CtrlMapa {
     // Tamaño de los asientos
     private static final double TAMANO_ASIENTO = 18;
 
-    // Tamaño de la sala que estamos mostrando
-    private enum TamanoSala {
-        PEQUENA, MEDIANA, GRANDE
-    }
-
-    // De momento probaremos con una sala pequeña
-    private TamanoSala tamanoSala = TamanoSala.MEDIANA;
+    private static final double SEPARACION_ASIENTO = 12;
+    private static final double INICIO_X = 50;
+    private static final double INICIO_Y = 50;
 
     // Todas las salas tendrán 5 filas
     private final int FILAS = 5;
@@ -83,9 +86,9 @@ public class CtrlMapa {
 
     @FXML
     private void initialize() {
-        dibujarAsientosPrueba();
+        //dibujarAsientosPrueba();
 
-        actualizarOcupacionZonas();
+        //actualizarOcupacionZonas();
 
         // Detectar los clics sobre el Canvas
         canvasMapa.setOnMouseClicked(event -> {
@@ -108,11 +111,11 @@ public class CtrlMapa {
 
         int columnas = obtenerColumnas();
 
-        double tamaño = 18;
-        double separacion = 12;
+        double tamaño = TAMANO_ASIENTO;
+        double separacion = SEPARACION_ASIENTO;
 
-        double inicioX = 50;
-        double inicioY = 50;
+        double inicioX = INICIO_X;
+        double inicioY = INICIO_Y;
 
         for (int fila = 0; fila < FILAS; fila++) {
             for (int columna = 0; columna < columnas; columna++) {
@@ -135,16 +138,26 @@ public class CtrlMapa {
                     vendido = true;
                 }
 
+                Venta venta = null;
+
+                if (vendido) {
+                    venta = new Venta(
+                        "RES-" + id,
+                        "Comprador " + id,
+                        "comprador@platea.cat",
+                        18.00
+                    );
+                }
+
                 // Crear el asiento
                 Asiento asiento = new Asiento(
                     id,
                     fila + 1,
                     columna + 1,
-                    "Z1",
+                    zonaNumerada.id(),
                     estat,
                     vendido,
-                    x,
-                    y
+                    venta
                 );
 
                 asientos.add(asiento);
@@ -194,8 +207,9 @@ public class CtrlMapa {
 
         // Mostrar información de la zona
         gc.setFill(Color.BLACK);
-        gc.fillText("ZONA GENERAL", x + ancho / 2 - 45, y + 40);
-        gc.fillText("Aforo: " + obtenerAforoGeneral(), x + ancho / 2 - 35, y + 65);
+
+        gc.fillText(zonaGeneral.nom(), x + ancho / 2 - 45, y + 40);
+        gc.fillText("Aforo: " + zonaGeneral.aforament(),x + ancho / 2 - 35, y + 65);
     }
 
     private void dibujarLeyenda(GraphicsContext gc) {
@@ -229,8 +243,13 @@ public class CtrlMapa {
         for (Asiento asiento : asientos) {
 
             // Calcular el centro del asiento
-            double centroX = asiento.x() + TAMANO_ASIENTO / 2;
-            double centroY = asiento.y() + TAMANO_ASIENTO / 2;
+            double xAsiento = INICIO_X +
+        (asiento.columna() - 1) * (TAMANO_ASIENTO + SEPARACION_ASIENTO);
+
+        double yAsiento = INICIO_Y + (asiento.fila() - 1) * (TAMANO_ASIENTO + SEPARACION_ASIENTO);
+
+        double centroX = xAsiento + TAMANO_ASIENTO / 2;
+        double centroY = yAsiento + TAMANO_ASIENTO / 2;
 
             // Calcular la distancia entre el clic y el centro del asiento
             double distanciaX = x - centroX;
@@ -257,7 +276,7 @@ public class CtrlMapa {
 
                     lblEstado.setText("Vendido");
 
-                    mostrarVentaPrueba(asiento);
+                    mostrarVenta(asiento);
 
                 // Si no está bloqueado ni vendido, está disponible
                 } else {
@@ -277,29 +296,25 @@ public class CtrlMapa {
         int ocupadosNumerada = 0;
 
         for (Asiento asiento : asientos) {
-            if ("Z1".equals(asiento.idZona()) && asiento.vendido()) {
+            if (zonaNumerada.id().equals(asiento.idZona()) && asiento.vendido()) {
                 ocupadosNumerada++;
             }
         }
 
         // Calcular el aforo de cada zona
-        int aforoNumerada = FILAS * obtenerColumnas();
-        int aforoGeneral = obtenerAforoGeneral();
+        int aforoNumerada = zonaNumerada.aforament();
+        int aforoGeneral = zonaGeneral.aforament();
 
         // Ocupación ficticia de la zona general
-        int ocupadosGeneral = switch (tamanoSala) {
-            case PEQUENA -> 8;
-            case MEDIANA -> 15;
-            case GRANDE -> 25;
-        };
+        int ocupadosGeneral = Math.min(8, aforoGeneral);
 
         // Actualizar los Labels
         lblOcupacionNumerada.setText(
-            "Numerada: " + ocupadosNumerada + "/" + aforoNumerada
+            zonaNumerada.nom() + ": " + ocupadosNumerada + "/" + aforoNumerada
         );
 
         lblOcupacionGeneral.setText(
-            "General: " + ocupadosGeneral + "/" + aforoGeneral
+            zonaGeneral.nom() + ": " + ocupadosGeneral + "/" + aforoGeneral
         );
     }
 
@@ -313,20 +328,23 @@ public class CtrlMapa {
     }
 
     // Mostrar los datos ficticios de una venta
-    private void mostrarVentaPrueba(Asiento asiento) {
+    private void mostrarVenta(Asiento asiento) {
+        Venta venta = asiento.venta();
 
-        lblLocalizador.setText("RES-" + asiento.id());
-        lblComprador.setText("Comprador de prueba");
-        lblCorreo.setText("prueba@platea.cat");
-        lblImporte.setText("18,00 €");
+        if (venta == null) {
+            return;
+        }
+
+        lblLocalizador.setText(venta.localizador());
+        lblComprador.setText(venta.comprador());
+        lblCorreo.setText(venta.correo());
+        lblImporte.setText(
+            String.format("%.2f", venta.importe()).replace('.', ',') + " €"
+        );
     }
 
     private int obtenerAforoGeneral() {
-        return switch (tamanoSala) {
-            case PEQUENA -> 20;
-            case MEDIANA -> 30;
-            case GRANDE -> 40;
-        };
+        return zonaGeneral.aforament();
     }
 
     private Color obtenerColorAsiento(Asiento asiento) {
@@ -341,10 +359,6 @@ public class CtrlMapa {
         return Color.LIGHTGREEN;
     }
 
-    
-
-
-
     // Estructura para almacenar la información de cada asiento
     private record Asiento(
         String id,
@@ -353,8 +367,15 @@ public class CtrlMapa {
         String idZona,
         String estat,
         boolean vendido,
-        double x,
-        double y
+        Venta venta
+    ) {
+    }
+
+    private record Venta(
+        String localizador,
+        String comprador,
+        String correo,
+        double importe
     ) {
     }
 
@@ -371,20 +392,53 @@ public class CtrlMapa {
     ) {
     }
 
-    // Recibir el evento seleccionado
-    public void setEsdeveniment(CtrlLlistatVendes.Esdeveniment esdeveniment,String nombreRecinto) {
+    // Recibir el evento y el recinto seleccionado
+    public void setEsdeveniment(
+            CtrlLlistatVendes.Esdeveniment esdeveniment,
+            CtrlLlistatVendes.Recinte recinto
+    ) {
         this.esdeveniment = esdeveniment;
+        this.recinto = recinto;
 
-        // Mostrar los datos del evento
+        // Mostrar los datos del evento y del recinto
         lblNombreEvento.setText(esdeveniment.nom());
-        lblNombreRecinto.setText(nombreRecinto);
+        lblNombreRecinto.setText(recinto.nom());
+
+        // Identificar las zonas del recinto
+        zonaNumerada = null;
+        zonaGeneral = null;
+
+        System.out.println("Recinto recibido: " + recinto.nom());
+
+        for (CtrlLlistatVendes.Zona zona : recinto.zones()) {
+
+            System.out.println(
+                "Zona: " + zona.id() +
+                " - " + zona.nom() +
+                " - Tipo: " + zona.tipus()
+            );
+
+            if ("numerada".equalsIgnoreCase(zona.tipus())) {
+                zonaNumerada = zona;
+
+            } else if ("general".equalsIgnoreCase(zona.tipus())) {
+                zonaGeneral = zona;
+            }
+        }
+
+        // Comprobar que se han encontrado las dos zonas
+        if (zonaNumerada == null || zonaGeneral == null) {
+            throw new IllegalStateException(
+                "No se han encontrado las zonas numerada y general del recinto."
+            );
+        }
+
+        // Dibujar el mapa con los datos del recinto
+        dibujarAsientosPrueba();
+        actualizarOcupacionZonas();
     }
 
     private int obtenerColumnas() {
-        return switch (tamanoSala) {
-            case PEQUENA -> 10;
-            case MEDIANA -> 15;
-            case GRANDE -> 20;
-        };
+        return zonaNumerada.aforament() / FILAS;
     }
 }

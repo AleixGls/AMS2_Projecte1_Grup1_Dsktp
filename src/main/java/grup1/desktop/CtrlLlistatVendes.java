@@ -65,6 +65,7 @@ public class CtrlLlistatVendes {
     // Mapas para relacionar los identificadores con sus nombres
     private final Map<String, String> nombresRecintos = new HashMap<>();
     private final Map<String, String> nombresZonas = new HashMap<>();
+    private final Map<String, Recinte> recintosPorId = new HashMap<>();
 
 
     @FXML
@@ -184,9 +185,11 @@ public class CtrlLlistatVendes {
 
                 nombresRecintos.clear();
                 nombresZonas.clear();
+                recintosPorId.clear();
 
                 if (catalogo.recintes() != null) {
                     for (Recinte recinte : catalogo.recintes()) {
+                        recintosPorId.put(recinte.id(), recinte);
                         nombresRecintos.put(
 							recinte.id(),
 							recinte.nom()
@@ -319,4 +322,9 @@ public class CtrlLlistatVendes {
 	public String obtenerNombreRecinto(String idRecinto) {
 		return nombresRecintos.getOrDefault(idRecinto, idRecinto);
 	}
+
+    // Obtener un recinto completo mediante su ID
+    public Recinte obtenerRecinto(String idRecinto) {
+        return recintosPorId.get(idRecinto);
+    }
 }

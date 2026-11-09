@@ -175,13 +175,21 @@ public class Main extends Application {
             // Obtener el controlador de la ventana
             CtrlMapa ctrlMapa = fxmlLoader.getController();
 
-            // Obtener el nombre del recinto
-            String nombreRecinto = ctrlLlistatVendes.obtenerNombreRecinto(
-                esdeveniment.recinte()
-            );
+            // Obtener el recinto completo
+            CtrlLlistatVendes.Recinte recinto = ctrlLlistatVendes.obtenerRecinto(esdeveniment.recinte());
+
+            // Comprobar que existe
+            if (recinto == null) {
+                mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Error",
+                    "No se ha encontrado el recinto del evento."
+                );
+                return;
+            }
 
             // Pasar la información al controlador del mapa
-            ctrlMapa.setEsdeveniment(esdeveniment, nombreRecinto);
+            ctrlMapa.setEsdeveniment(esdeveniment, recinto);
 
             // Crear una nueva ventana
             Stage stageMapa = new Stage();
