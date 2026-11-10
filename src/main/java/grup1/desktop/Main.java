@@ -38,7 +38,7 @@ public class Main extends Application {
         }
 
         // Construir la direccion del servidor
-        String serverUrl = "ws://" + server.trim();
+        String serverUrl = "wss://" + server.trim();
 
         System.out.println("Conectando a: " + serverUrl);
 
