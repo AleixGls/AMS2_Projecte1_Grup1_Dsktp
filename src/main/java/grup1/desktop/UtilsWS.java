@@ -395,4 +395,40 @@ public class UtilsWS {
         erroresMapaPendientes.clear();
         mapasPendientes.clear();
     }
+
+    // Desconectar del servidor WebSocket
+    public void disconnect() {
+    
+        if (webSocket != null) {
+        
+            System.out.println("Desconectando del servidor...");
+        
+            webSocket.sendClose(
+                    WebSocket.NORMAL_CLOSURE,
+                    "Desconexion del cliente"
+            ).whenComplete((resultado, error) -> {
+            
+                if (error != null) {
+                
+                    System.err.println(
+                            "Error al desconectar: " + error.getMessage()
+                    );
+                
+                    webSocket.abort();
+                }
+            
+                webSocket = null;
+            
+            });
+        
+            notificarErroresMapas(
+                    "Se ha cerrado la conexión con el servidor."
+            );
+        
+        } else {
+        
+            System.out.println("No hay ninguna conexion activa.");
+        
+        }
+    }
 }

@@ -68,8 +68,41 @@ public class Main extends Application {
                         System.err.println("Error guardando la configuracion: " + e.getMessage());
                     }
 
-                    // Cambiar de pantalla en el hilo de JavaFX
-                    Platform.runLater(() -> obrirLlistatVendes());
+                    // Cambiar de ventana dependiendo de la ubicacion
+                    if (location.equals("Taquilla")) {
+                    
+                        // Abrir el listado de ventas
+                        Platform.runLater(() -> obrirLlistatVendes());
+                    
+                    } else if (location.equals("Puerta")) {
+                    
+                        // Abrir la pantalla de Puerta
+                    
+                    } else if (location.equals("Oficina")) {
+                    
+                        // Desconectar del servidor
+                        utilsWS.disconnect();
+                    
+                        // Mostrar error
+                        Platform.runLater(() -> mostrarAlerta(
+                                Alert.AlertType.ERROR,
+                                "Ubicación no disponible",
+                                "La ubicación Oficina no está disponible."
+                        ));
+                    
+                    } else {
+                    
+                        // Desconectar del servidor
+                        utilsWS.disconnect();
+                    
+                        // Mostrar error
+                        Platform.runLater(() -> mostrarAlerta(
+                                Alert.AlertType.ERROR,
+                                "Error de ubicación",
+                                "La ubicación seleccionada no es válida."
+                        ));
+                    }
+
 
                 },
 
