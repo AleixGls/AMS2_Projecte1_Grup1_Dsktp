@@ -15,6 +15,10 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
 
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.beans.property.ReadOnlyStringWrapper;
+
 import tools.jackson.databind.ObjectMapper;
 
 public class CtrlMapa {
@@ -56,11 +60,23 @@ public class CtrlMapa {
     @FXML private Label lblOcupacionNumerada;
     @FXML private Label lblOcupacionGeneral;
 
+    @FXML private TableView<EntradaVendida> tableEntradasVendidas;
+    @FXML private TableColumn<EntradaVendida, String> localizadorEntradaMapa;
+    @FXML private TableColumn<EntradaVendida, String> nombreEntradaMapa;
+    @FXML private TableColumn<EntradaVendida, String> tipoEntradaMapa;
+    @FXML private TableColumn<EntradaVendida, String> asientoEntradaMapa;
+    @FXML private TableColumn<EntradaVendida, String> estadoEntradaMapa;
+    @FXML private TableColumn<EntradaVendida, String> fechaEntradaMapa;
+
+    private final List<EntradaVendida> entradasVendidas = new ArrayList<>();
+
+
     @FXML
     private void initialize() {
         canvasMapa.setOnMouseClicked(event ->
                 seleccionarAsiento(event.getX(), event.getY())
         );
+        configurarTablaEntradasInicial();
     }
 
     // Recibir el evento y el recinto seleccionado desde el listado.
@@ -105,6 +121,7 @@ public class CtrlMapa {
 
             asientos.clear();
             posicionesAsientos.clear();
+            cargarEntradasVendidas(respuesta.entradesVenudes());
 
             // Si el servidor envía las zonas, sustituir las del catálogo.
             if (respuesta.zonas() != null) {
@@ -357,44 +374,84 @@ public class CtrlMapa {
         );
     }
 
+    private void configurarTablaEntradasInicial() { 
+
+        localizadorEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().localizador()));
+
+        nombreEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().comprador()));
+
+        tipoEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().tipoEntrada()));
+
+        asientoEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().asiento()));
+
+        estadoEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().estadoEntrada()));
+
+        fechaEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().fechaHoraCompra()));
+    }
+
+    private void cargarEntradasVendidas(List<EntradaVendida> entradas) {
+        tableEntradasVendidas.getItems().clear();
+
+        if (entradas != null) {
+            tableEntradasVendidas.getItems().setAll(entradas);
+        }
+    }
+
     // Records utilizados directamente por Jackson para convertir el JSON.
     public record RespuestaMapa(
-            String type,
-            String esdeveniment,
-            String recinte,
-            List<ZonaMapa> zonas,
-            List<Asiento> seients
+        String type,
+        String esdeveniment,
+        String recinte,
+        List<ZonaMapa> zonas,
+        List<Asiento> seients,
+        List<EntradaVendida> entradesVenudes
     ) {
     }
 
     public record ZonaMapa(
-            String id,
-            String nombre,
-            String tipo,
-            int aforament,
-            int ocupacion
+        String id,
+        String nombre,
+        String tipo,
+        int aforament,
+        int ocupacion
     ) {
     }
 
     public record Asiento(
-            String id,
-            int fila,
-            int columna,
-            String idZona,
-            String nombreZona,
-            String estat,
-            boolean vendido,
-            Venta venta
+        String id,
+        int fila,
+        int columna,
+        String idZona,
+        String nombreZona,
+        String estat,
+        boolean vendido,
+        Venta venta
     ) {
     }
 
     public record Venta(
-            String localizador,
-            String idVenta,
-            String comprador,
-            String correo,
-            double importe,
-            String estadoEntrada
+        String localizador,
+        String idVenta,
+        String comprador,
+        String correo,
+        double importe,
+        String estadoEntrada
+    ) {
+    }
+
+    public record EntradaVendida(
+        String fechaHoraCompra,
+        String localizador,
+        String tipoEntrada,
+        String asiento,
+        String comprador,
+        String estadoEntrada
     ) {
     }
 
