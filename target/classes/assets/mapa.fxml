@@ -3,21 +3,22 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.canvas.Canvas?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
-<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="750.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="grup1.desktop.CtrlMapa">
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="750.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="grup1.desktop.CtrlMapa">
    <center>
-      <ScrollPane fitToHeight="false" fitToWidth="false"
-                  hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED"
-                  BorderPane.alignment="CENTER">
+      <ScrollPane fitToHeight="false" fitToWidth="false" hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED" BorderPane.alignment="CENTER">
          <content>
             <Canvas fx:id="canvasMapa" height="600.0" width="750.0" />
          </content>
@@ -88,4 +89,24 @@
          </children>
       </VBox>
    </top>
+   <bottom>
+      <ScrollPane prefHeight="200.0" prefWidth="1194.0" BorderPane.alignment="CENTER">
+        <content>
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="200.0" prefWidth="200.0">
+               <children>
+                  <TableView prefHeight="200.0" prefWidth="881.0">
+                    <columns>
+                        <TableColumn fx:id="localizadorEntradaMapa" prefWidth="77.59999996423721" text="Localizador" />
+                        <TableColumn fx:id="nombreEntradaMapa" prefWidth="120.80001831054688" text="Nombre" />
+                        <TableColumn fx:id="tipoEntradaMapa" prefWidth="135.20001220703125" text="Tipo de entrada" />
+                        <TableColumn fx:id="asientoEntradaMapa" minWidth="0.0" prefWidth="96.79998779296875" text="Asiento" />
+                      <TableColumn fx:id="estadoEntradaMapa" minWidth="0.0" prefWidth="171.199951171875" text="Estado de la entrada" />
+                      <TableColumn fx:id="fechaEntradaMapa" prefWidth="281.5999755859375" text="Fecha y hora de la compra" />
+                    </columns>
+                  </TableView>
+               </children>
+            </AnchorPane>
+        </content>
+      </ScrollPane>
+   </bottom>
 </BorderPane>
