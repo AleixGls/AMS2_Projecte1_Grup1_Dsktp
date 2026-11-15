@@ -12,6 +12,7 @@ public class Main extends Application {
 
     public static CtrlConnexio ctrlConnexio;
     public static CtrlLlistatVendes ctrlLlistatVendes;
+    public static CtrlPorta ctrlPorta;
     public static UtilsWS utilsWS = new UtilsWS();
 
     private static Stage stagePrincipal;
@@ -38,7 +39,7 @@ public class Main extends Application {
         }
 
         // Construir la direccion del servidor
-        String serverUrl = "wss://" + server.trim();
+        String serverUrl = "ws://" + server.trim();
 
         System.out.println("Conectando a: " + serverUrl);
 
@@ -77,6 +78,7 @@ public class Main extends Application {
                     } else if (location.equals("Puerta")) {
                     
                         // Abrir la pantalla de Puerta
+                        Platform.runLater(() -> obrirVerificadorID());
                     
                     } else if (location.equals("Oficina")) {
                     
@@ -273,6 +275,39 @@ public class Main extends Application {
                     Alert.AlertType.ERROR,
                     "Error de interfaz",
                     "No se ha podido abrir el mapa del recinto."
+            );
+        }
+    }
+
+    public static void obrirVerificadorID() {
+
+        try {
+
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                    Main.class.getResource("/assets/porta.fxml")
+            );
+
+            Parent root = fxmlLoader.load();
+
+            // Obtener el controlador de la pantalla
+            ctrlPorta = fxmlLoader.getController();
+
+            Scene scene = new Scene(root);
+
+            stagePrincipal.setScene(scene);
+            stagePrincipal.setTitle("Llistat de vendes");
+
+            // Solicitar el catalogo al servidor
+            //utilsWS.solicitarEventos();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Error de interfaz",
+                    "No se ha podido abrir la siguiente pantalla."
             );
         }
     }
