@@ -141,11 +141,8 @@ public class Main extends Application {
 
         stagePrincipal = stage;
 
-        final int windowWidth = 1000;
-        final int windowHeight = 700;
-
         FXMLLoader fxmlLoader = new FXMLLoader(
-                getClass().getResource("/assets/connecta.fxml")
+            getClass().getResource("/assets/connecta.fxml")
         );
 
         Parent root = fxmlLoader.load();
@@ -156,8 +153,6 @@ public class Main extends Application {
 
         stage.setScene(scene);
         stage.setTitle("Portal de conexión");
-        stage.setMinWidth(windowWidth);
-        stage.setMinHeight(windowHeight);
         stage.show();
     }
 
@@ -166,7 +161,7 @@ public class Main extends Application {
         try {
 
             FXMLLoader fxmlLoader = new FXMLLoader(
-                    Main.class.getResource("/assets/events.fxml")
+                Main.class.getResource("/assets/events.fxml")
             );
 
             Parent root = fxmlLoader.load();
@@ -283,7 +278,7 @@ public class Main extends Application {
         try {
 
             FXMLLoader fxmlLoader = new FXMLLoader(
-                    Main.class.getResource("/assets/connecta.fxml")
+                Main.class.getResource("/assets/connecta.fxml")
             );
 
             Parent root = fxmlLoader.load();
@@ -316,7 +311,7 @@ public class Main extends Application {
             Scene scene = new Scene(root);
 
             stagePrincipal.setScene(scene);
-            stagePrincipal.setTitle("Llistat de vendes");
+            stagePrincipal.setTitle("Verificador de ID");
 
             // Solicitar el catalogo al servidor
             //utilsWS.solicitarEventos();
