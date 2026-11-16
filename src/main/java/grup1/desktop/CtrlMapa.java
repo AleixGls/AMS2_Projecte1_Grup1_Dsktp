@@ -13,6 +13,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
+import javafx.scene.control.Button;
 import javafx.scene.paint.Color;
 
 import javafx.scene.control.TableColumn;
@@ -59,6 +60,7 @@ public class CtrlMapa {
     @FXML private Label lblEstado;
     @FXML private Label lblOcupacionNumerada;
     @FXML private Label lblOcupacionGeneral;
+    @FXML private Button goBackMapa;
 
     @FXML private TableView<EntradaVendida> tableEntradasVendidas;
     @FXML private TableColumn<EntradaVendida, String> localizadorEntradaMapa;
@@ -77,6 +79,10 @@ public class CtrlMapa {
                 seleccionarAsiento(event.getX(), event.getY())
         );
         configurarTablaEntradasInicial();
+
+        goBackMapa.setOnAction(event -> {
+            goBackMapa.getScene().getWindow().hide();
+        });
     }
 
     // Recibir el evento y el recinto seleccionado desde el listado.

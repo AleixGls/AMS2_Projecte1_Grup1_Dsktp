@@ -279,6 +279,27 @@ public class Main extends Application {
         }
     }
 
+    public static void volverAConexion() {
+        try {
+
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                    Main.class.getResource("/assets/connecta.fxml")
+            );
+
+            Parent root = fxmlLoader.load();
+
+            // Recuperar el controlador de conexión
+            ctrlConnexio = fxmlLoader.getController();
+
+            // Volver a mostrar la pantalla de conexión
+            stagePrincipal.setScene(new Scene(root));
+            stagePrincipal.setTitle("Portal de conexión");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void obrirVerificadorID() {
 
         try {
