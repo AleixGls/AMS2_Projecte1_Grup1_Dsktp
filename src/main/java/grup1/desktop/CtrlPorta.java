@@ -5,16 +5,20 @@ import java.util.Map;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Button;
 
 public class CtrlPorta {
 
-    @FXML
-    TextField inputIdEntrada;
+    @FXML TextField inputIdEntrada;
+    @FXML Label txtMissatgeVerificacio;
+    @FXML Button goBackPorta;
 
     @FXML
-    Label txtMissatgeVerificacio;
-
-
+    private void initialize() {
+        goBackPorta .setOnAction(event -> { 
+            Main.volverAConexion();
+        });
+    }
 
     @FXML // Al pulsar el boton de verificar
     private void verificarID() {

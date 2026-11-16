@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
@@ -8,9 +9,18 @@
 <?import javafx.scene.text.Font?>
 
 <!--En el fx controller del Vbox, es de ejemplo, cambiar cuando este hecho el servidor, revisar si es necesario -->
+<!-- <VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="grup1.desktop.CtrlPorta"> -->
 
-<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="grup1.desktop.CtrlPorta">
+<VBox alignment="CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="grup1.desktop.CtrlPorta">
    <children>
+      <HBox prefHeight="100.0" prefWidth="600.0">
+         <children>
+            <Button fx:id="goBackPorta" mnemonicParsing="false" text="Volver" />
+         </children>
+         <padding>
+            <Insets left="30.0" />
+         </padding>
+      </HBox>
       <Label text="Introdueix l'ID de la entrada a verificar:">
          <font>
             <Font size="16.0" />

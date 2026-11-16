@@ -19,45 +19,21 @@ import tools.jackson.databind.ObjectMapper;
 public class CtrlLlistatVendes {
 
     // Tablas de la interfaz grafica
-    @FXML
-    private TableView<Esdeveniment> tableEsdeveniments;
+    @FXML private TableView<Esdeveniment> tableEsdeveniments;
+    @FXML private TableColumn<Esdeveniment, String> idEventoColumn;
+    @FXML private TableColumn<Esdeveniment, String> nombreEventoColumn;
+    @FXML private TableColumn<Esdeveniment, String> recintoEventoColumn;
+    @FXML private TableColumn<Esdeveniment, String> fechaEventoColumn;
+    @FXML private TableColumn<Esdeveniment, String> categoriaEventoColumn;
+    @FXML private TableColumn<Esdeveniment, Void> entradasEventoColumn;
+    @FXML private TableView<TipusEntrada> tableTipusEntrades;
+    @FXML private TableColumn<TipusEntrada, String> idEntradaColumn;
+    @FXML private TableColumn<TipusEntrada, String> nombreEntradaColumn;
+    @FXML private TableColumn<TipusEntrada, String> zonaEntradaColumn;
+    @FXML private TableColumn<TipusEntrada, String> preuEntradaColumn;
+    @FXML private TableColumn<TipusEntrada, String> quotaEntradaColumn;
 
-    @FXML
-    private TableColumn<Esdeveniment, String> idEventoColumn;
-
-    @FXML
-    private TableColumn<Esdeveniment, String> nombreEventoColumn;
-
-    @FXML
-    private TableColumn<Esdeveniment, String> recintoEventoColumn;
-
-    @FXML
-    private TableColumn<Esdeveniment, String> fechaEventoColumn;
-
-    @FXML
-    private TableColumn<Esdeveniment, String> categoriaEventoColumn;
-
-    @FXML
-    private TableColumn<Esdeveniment, Void> entradasEventoColumn;
-
-    @FXML
-    private TableView<TipusEntrada> tableTipusEntrades;
-
-    @FXML
-    private TableColumn<TipusEntrada, String> idEntradaColumn;
-
-    @FXML
-    private TableColumn<TipusEntrada, String> nombreEntradaColumn;
-
-    @FXML
-    private TableColumn<TipusEntrada, String> zonaEntradaColumn;
-
-    @FXML
-    private TableColumn<TipusEntrada, String> preuEntradaColumn;
-
-    @FXML
-    private TableColumn<TipusEntrada, String> quotaEntradaColumn;
-
+    @FXML private Button goBackEventos;
 
     // Objeto para leer el JSON
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -163,6 +139,11 @@ public class CtrlLlistatVendes {
 			.addListener((observable, anterior, seleccionado) -> {
 				mostrarEntradas(seleccionado);
 			});
+        
+        goBackEventos.setOnAction(event -> {
+            Main.volverAConexion();
+        });
+        
     }
 
 
@@ -316,6 +297,8 @@ public class CtrlLlistatVendes {
 		int quota
     ) {
     }
+
+    
 
 
     // Obtener el nombre de un recinto mediante su ID
