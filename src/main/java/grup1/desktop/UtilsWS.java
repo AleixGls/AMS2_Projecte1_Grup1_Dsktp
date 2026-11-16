@@ -1,4 +1,3 @@
-
 package grup1.desktop;
 
 import java.net.URI;
@@ -31,6 +30,11 @@ public class UtilsWS {
 
     private final Map<String, Consumer<String>> erroresMapaPendientes =
             new ConcurrentHashMap<>();
+
+    // Respuesta pendiente de la validación de una entrada
+    private Consumer<String> respuestaValidacionPendiente;
+    @SuppressWarnings("unused")
+    private Consumer<String> errorValidacionPendiente;
 
     public UtilsWS() {
 
@@ -189,7 +193,26 @@ public class UtilsWS {
                                         "No hay una petición de mapa pendiente."
                                 );
                             }
-
+                        // Respuesta de la validación de una entrada
+                        } else if ("validacioOk".equals(tipo)
+                                || "validacioError".equals(tipo)) {
+                                
+                            Consumer<String> callback = respuestaValidacionPendiente;
+                                
+                            respuestaValidacionPendiente = null;
+                            errorValidacionPendiente = null;
+                                
+                            if (callback != null) {
+                            
+                                callback.accept(mensaje);
+                            
+                                System.out.println("Respuesta de validación recibida: " + tipo);
+                            
+                            } else {
+                            
+                                System.out.println("No hay ninguna validación pendiente.");
+                            }
+                        
                         // Comprobar si el servidor ha devuelto un error
                         } else if ("error".equals(tipo)) {
 
@@ -394,5 +417,89 @@ public class UtilsWS {
 
         erroresMapaPendientes.clear();
         mapasPendientes.clear();
+    }
+
+    // Solicitar al servidor la validación de una entrada
+    public void validarEntrada(
+            String idEntrada,
+            Consumer<String> onRespuesta,
+            Consumer<String> onError) {
+
+        if (webSocket == null) {
+            onError.accept("No hay conexión con el servidor.");
+            return;
+        }
+
+        // Guardar los callbacks para procesar la respuesta
+        respuestaValidacionPendiente = onRespuesta;
+        errorValidacionPendiente = onError;
+
+        try {
+
+            // Crear la petición JSON
+            String peticion = objectMapper.writeValueAsString(
+                    Map.of(
+                            "type", "validarEntrada",
+                            "idEntrada", idEntrada
+                    )
+            );
+
+            System.out.println("Solicitando validación de entrada: " + idEntrada);
+
+            // Enviar la petición al servidor
+            webSocket.sendText(peticion, true).whenComplete((resultado, error) -> {
+
+                if (error != null) {
+
+                    respuestaValidacionPendiente = null;
+                    errorValidacionPendiente = null;
+
+                    onError.accept(error.getMessage());
+                }
+            });
+
+        } catch (Exception e) {
+
+            respuestaValidacionPendiente = null;
+            errorValidacionPendiente = null;
+
+            onError.accept(e.getMessage());
+        }
+    }
+
+    // Desconectar del servidor WebSocket
+    public void disconnect() {
+    
+        if (webSocket != null) {
+        
+            System.out.println("Desconectando del servidor...");
+        
+            webSocket.sendClose(
+                    WebSocket.NORMAL_CLOSURE,
+                    "Desconexion del cliente"
+            ).whenComplete((resultado, error) -> {
+            
+                if (error != null) {
+                
+                    System.err.println(
+                            "Error al desconectar: " + error.getMessage()
+                    );
+                
+                    webSocket.abort();
+                }
+            
+                webSocket = null;
+            
+            });
+        
+            notificarErroresMapas(
+                    "Se ha cerrado la conexión con el servidor."
+            );
+        
+        } else {
+        
+            System.out.println("No hay ninguna conexion activa.");
+        
+        }
     }
 }
