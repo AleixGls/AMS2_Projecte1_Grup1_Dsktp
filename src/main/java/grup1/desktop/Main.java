@@ -1,55 +1,331 @@
 package grup1.desktop;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
-
-import javafx.fxml.FXMLLoader;
 
 public class Main extends Application {
 
     public static CtrlConnexio ctrlConnexio;
+    public static CtrlLlistatVendes ctrlLlistatVendes;
+    public static CtrlPorta ctrlPorta;
+    public static UtilsWS utilsWS = new UtilsWS();
+
+    private static Stage stagePrincipal;
+
     public static void main(String[] args) {
         launch(args);
     }
 
-    public static void connectToServer() { //Metodo del cliente para conectarse al servidor 
+    public static void connectToServer() { // Metodo del cliente para conectarse al servidor
+
         String location = ctrlConnexio.getComboBoxValue();
         String server = ctrlConnexio.getTextServidor();
-        //ieticloudpro.ieti.cat
 
-        String serverUrl = "ws://" + server + ":3000"; 
-        
-        //*Se comprueba si location es null ya que  cogemos el valor de un comboBox
-        // En el resto de comprobaciones, miramos que no este vacio ni con unicamente espacios */
-        if (location == null || location.isBlank() || server.isBlank()) { 
-            System.out.println("Rellena los campos");
+        // Comprobar que los campos no esten vacios
+        if (location == null || location.isBlank() || server == null || server.isBlank()) {
+
+            mostrarAlerta(
+                    Alert.AlertType.WARNING,
+                    "Campos incompletos",
+                    "Rellena todos los campos antes de conectar."
+            );
+
+            return;
         }
 
+        // Construir la direccion del servidor
+        String serverUrl = "wss://" + server.trim();
+
+        System.out.println("Conectando a: " + serverUrl);
+
+        // Indicar donde se mostraran los eventos recibidos
+        utilsWS.setOnCatalogo(json -> {
+
+            if (ctrlLlistatVendes != null) {
+                ctrlLlistatVendes.cargarCatalogo(json);
+            }
+
+        });
+
+        utilsWS.connect(
+                serverUrl,
+
+                ws -> { // En caso de que conecte bien al servidor
+
+                    System.out.println("Conexion establecida correctamente.");
+
+                    // Guardar la configuracion despues de conectar correctamente
+                    try {
+
+                        ConfigManager.updateConfigXML(location, server.trim());
+
+                    } catch (Exception e) {
+
+                        System.err.println("Error guardando la configuracion: " + e.getMessage());
+                    }
+
+                    // Cambiar de ventana dependiendo de la ubicacion
+                    if (location.equals("Taquilla")) {
+                    
+                        // Abrir el listado de ventas
+                        Platform.runLater(() -> obrirLlistatVendes());
+                    
+                    } else if (location.equals("Puerta")) {
+                    
+                        // Abrir la pantalla de Puerta
+                        Platform.runLater(() -> obrirVerificadorID());
+                    
+                    } else if (location.equals("Oficina")) {
+                    
+                        // Desconectar del servidor
+                        utilsWS.disconnect();
+                    
+                        // Mostrar error
+                        Platform.runLater(() -> mostrarAlerta(
+                                Alert.AlertType.ERROR,
+                                "Ubicación no disponible",
+                                "La ubicación Oficina no está disponible."
+                        ));
+                    
+                    } else {
+                    
+                        // Desconectar del servidor
+                        utilsWS.disconnect();
+                    
+                        // Mostrar error
+                        Platform.runLater(() -> mostrarAlerta(
+                                Alert.AlertType.ERROR,
+                                "Error de ubicación",
+                                "La ubicación seleccionada no es válida."
+                        ));
+                    }
+
+
+                },
+
+                error -> { // Caso en el que no conecte al servidor
+
+                    System.err.println("Error de conexion: " + error.getMessage());
+
+                    Platform.runLater(() -> mostrarAlerta(
+                            Alert.AlertType.ERROR,
+                            "Error de conexion",
+                            error.getMessage()
+                    ));
+                }
+        );
+    }
+
+    // Mostrar mensajes de error o informacion
+    private static void mostrarAlerta(
+            Alert.AlertType tipo,
+            String titulo,
+            String mensaje) {
+
+        Alert alerta = new Alert(tipo);
+
+        alerta.setTitle(titulo);
+        alerta.setHeaderText(titulo);
+        alerta.setContentText(mensaje);
+
+        alerta.showAndWait();
     }
 
     @Override
-    public void start(Stage stage) throws Exception { //Este metodo consigue que al ejectuar el codigo aparezca la interfaz grafica
-        final int windowWidth = 1000;
-        final int windowHeight = 700;
+    public void start(Stage stage) throws Exception { // Este metodo consigue que al ejecutar el codigo aparezca la interfaz grafica
 
-        FXMLLoader fxmlLoader = new FXMLLoader( //Cargamos la interfaz grafica
+        stagePrincipal = stage;
+
+        FXMLLoader fxmlLoader = new FXMLLoader(
             getClass().getResource("/assets/connecta.fxml")
         );
 
-        Parent root = fxmlLoader.load(); //Contstruye la interfaz
+        Parent root = fxmlLoader.load();
 
         ctrlConnexio = fxmlLoader.getController();
 
-        Scene scene = new Scene(root); //Creamos la escena
+        Scene scene = new Scene(root);
 
         stage.setScene(scene);
         stage.setTitle("Portal de conexión");
-        stage.setMinWidth(windowWidth);
-        stage.setMinHeight(windowHeight);
         stage.show();
     }
 
-    
+    public static void obrirLlistatVendes() {
+
+        try {
+
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                Main.class.getResource("/assets/events.fxml")
+            );
+
+            Parent root = fxmlLoader.load();
+
+            // Obtener el controlador de la pantalla
+            ctrlLlistatVendes = fxmlLoader.getController();
+
+            Scene scene = new Scene(root);
+
+            stagePrincipal.setScene(scene);
+            stagePrincipal.setTitle("Llistat de vendes");
+
+            // Solicitar el catalogo al servidor
+            utilsWS.solicitarEventos();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Error de interfaz",
+                    "No se ha podido abrir la siguiente pantalla."
+            );
+        }
+    }
+
+    // Abrir la ventana del mapa del recinto
+    public static void abrirMapa(CtrlLlistatVendes.Esdeveniment esdeveniment) {
+
+        try {
+
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                    Main.class.getResource("/assets/mapa.fxml")
+            );
+
+            Parent root = fxmlLoader.load();
+
+            // Obtener el controlador de la ventana
+            CtrlMapa ctrlMapa = fxmlLoader.getController();
+
+            // Obtener el recinto completo
+            CtrlLlistatVendes.Recinte recinto =
+                    ctrlLlistatVendes.obtenerRecinto(esdeveniment.recinte());
+
+            // Comprobar que existe
+            if (recinto == null) {
+
+                mostrarAlerta(
+                        Alert.AlertType.ERROR,
+                        "Error",
+                        "No se ha encontrado el recinto del evento."
+                );
+
+                return;
+            }
+
+            // Pasar la informacion del evento y del recinto al controlador
+            ctrlMapa.setEsdeveniment(esdeveniment, recinto);
+
+            // Crear una nueva ventana
+            Stage stageMapa = new Stage();
+
+            stageMapa.setTitle("Mapa del recinto");
+            stageMapa.setScene(new Scene(root));
+            stageMapa.setMinWidth(900);
+            stageMapa.setMinHeight(600);
+
+            stageMapa.initOwner(stagePrincipal);
+
+            // Mostrar la ventana
+            stageMapa.show();
+
+            // Solicitar al servidor los datos reales del mapa
+            utilsWS.solicitarMapa(
+                    esdeveniment.id(),
+
+                    json -> {
+
+                        // Los cambios de interfaz deben hacerse en el hilo de JavaFX
+                        Platform.runLater(() -> {
+
+                            // Cargar los asientos y la ocupacion recibidos del servidor
+                            ctrlMapa.cargarMapa(json);
+
+                        });
+
+                    },
+
+                    error -> {
+
+                        Platform.runLater(() -> mostrarAlerta(
+                                Alert.AlertType.ERROR,
+                                "Error al cargar el mapa",
+                                error
+                        ));
+
+                    }
+            );
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Error de interfaz",
+                    "No se ha podido abrir el mapa del recinto."
+            );
+        }
+    }
+
+    public static void volverAConexion() {
+        try {
+
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                Main.class.getResource("/assets/connecta.fxml")
+            );
+
+            Parent root = fxmlLoader.load();
+
+            // Recuperar el controlador de conexión
+            ctrlConnexio = fxmlLoader.getController();
+
+            // Volver a mostrar la pantalla de conexión
+            stagePrincipal.setScene(new Scene(root));
+            stagePrincipal.setTitle("Portal de conexión");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void obrirVerificadorID() {
+
+        try {
+
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                    Main.class.getResource("/assets/porta.fxml")
+            );
+
+            Parent root = fxmlLoader.load();
+
+            // Obtener el controlador de la pantalla
+            ctrlPorta = fxmlLoader.getController();
+
+            Scene scene = new Scene(root);
+
+            stagePrincipal.setScene(scene);
+            stagePrincipal.setTitle("Verificador de ID");
+
+            // Solicitar el catalogo al servidor
+            //utilsWS.solicitarEventos();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Error de interfaz",
+                    "No se ha podido abrir la siguiente pantalla."
+            );
+        }
+    }
+
 }
