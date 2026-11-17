@@ -222,8 +222,8 @@ public class CtrlMapa {
 
         for (int i = 0; i < asientosNumerados.size(); i++) {
             Asiento asiento = asientosNumerados.get(i);
-            int fila = i % FILAS;
-            int columna = i / FILAS;
+            int fila = asiento.fila() - 1;
+            int columna = asiento.columna() - 1;
             double x = INICIO_X + columna * PASO_ASIENTO;
             double y = INICIO_Y + fila * PASO_ASIENTO;
 
