@@ -1,4 +1,3 @@
-
 package grup1.desktop;
 
 import java.io.File;
@@ -23,7 +22,7 @@ public class ConfigManager { // Clase para gestionar CONFIG.XML
     // Leer los datos guardados en CONFIG.XML
     public static Config readConfig() {
 
-        File configFile = new File("CONFIG.XML");
+        File configFile = new File("src/main/resources/assets/config/CONFIG.XML");
 
         // Comprobar si existe el archivo de configuración
         if (!configFile.exists()) {
@@ -91,7 +90,7 @@ public class ConfigManager { // Clase para gestionar CONFIG.XML
 
             transformer.transform(
                     new DOMSource(doc),
-                    new StreamResult(new File("CONFIG.XML"))
+                    new StreamResult(new File("src/main/resources/assets/config/CONFIG.XML"))
             );
 
         } catch (Exception e) {

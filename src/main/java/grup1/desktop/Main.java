@@ -12,6 +12,7 @@ public class Main extends Application {
 
     public static CtrlConnexio ctrlConnexio;
     public static CtrlLlistatVendes ctrlLlistatVendes;
+    public static CtrlPorta ctrlPorta;
     public static UtilsWS utilsWS = new UtilsWS();
 
     private static Stage stagePrincipal;
@@ -68,8 +69,42 @@ public class Main extends Application {
                         System.err.println("Error guardando la configuracion: " + e.getMessage());
                     }
 
-                    // Cambiar de pantalla en el hilo de JavaFX
-                    Platform.runLater(() -> obrirLlistatVendes());
+                    // Cambiar de ventana dependiendo de la ubicacion
+                    if (location.equals("Taquilla")) {
+                    
+                        // Abrir el listado de ventas
+                        Platform.runLater(() -> obrirLlistatVendes());
+                    
+                    } else if (location.equals("Puerta")) {
+                    
+                        // Abrir la pantalla de Puerta
+                        Platform.runLater(() -> obrirVerificadorID());
+                    
+                    } else if (location.equals("Oficina")) {
+                    
+                        // Desconectar del servidor
+                        utilsWS.disconnect();
+                    
+                        // Mostrar error
+                        Platform.runLater(() -> mostrarAlerta(
+                                Alert.AlertType.ERROR,
+                                "Ubicación no disponible",
+                                "La ubicación Oficina no está disponible."
+                        ));
+                    
+                    } else {
+                    
+                        // Desconectar del servidor
+                        utilsWS.disconnect();
+                    
+                        // Mostrar error
+                        Platform.runLater(() -> mostrarAlerta(
+                                Alert.AlertType.ERROR,
+                                "Error de ubicación",
+                                "La ubicación seleccionada no es válida."
+                        ));
+                    }
+
 
                 },
 
@@ -106,11 +141,8 @@ public class Main extends Application {
 
         stagePrincipal = stage;
 
-        final int windowWidth = 1000;
-        final int windowHeight = 700;
-
         FXMLLoader fxmlLoader = new FXMLLoader(
-                getClass().getResource("/assets/connecta.fxml")
+            getClass().getResource("/assets/connecta.fxml")
         );
 
         Parent root = fxmlLoader.load();
@@ -121,8 +153,6 @@ public class Main extends Application {
 
         stage.setScene(scene);
         stage.setTitle("Portal de conexión");
-        stage.setMinWidth(windowWidth);
-        stage.setMinHeight(windowHeight);
         stage.show();
     }
 
@@ -131,7 +161,7 @@ public class Main extends Application {
         try {
 
             FXMLLoader fxmlLoader = new FXMLLoader(
-                    Main.class.getResource("/assets/events.fxml")
+                Main.class.getResource("/assets/events.fxml")
             );
 
             Parent root = fxmlLoader.load();
@@ -240,6 +270,60 @@ public class Main extends Application {
                     Alert.AlertType.ERROR,
                     "Error de interfaz",
                     "No se ha podido abrir el mapa del recinto."
+            );
+        }
+    }
+
+    public static void volverAConexion() {
+        try {
+
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                Main.class.getResource("/assets/connecta.fxml")
+            );
+
+            Parent root = fxmlLoader.load();
+
+            // Recuperar el controlador de conexión
+            ctrlConnexio = fxmlLoader.getController();
+
+            // Volver a mostrar la pantalla de conexión
+            stagePrincipal.setScene(new Scene(root));
+            stagePrincipal.setTitle("Portal de conexión");
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void obrirVerificadorID() {
+
+        try {
+
+            FXMLLoader fxmlLoader = new FXMLLoader(
+                    Main.class.getResource("/assets/porta.fxml")
+            );
+
+            Parent root = fxmlLoader.load();
+
+            // Obtener el controlador de la pantalla
+            ctrlPorta = fxmlLoader.getController();
+
+            Scene scene = new Scene(root);
+
+            stagePrincipal.setScene(scene);
+            stagePrincipal.setTitle("Verificador de ID");
+
+            // Solicitar el catalogo al servidor
+            //utilsWS.solicitarEventos();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            mostrarAlerta(
+                    Alert.AlertType.ERROR,
+                    "Error de interfaz",
+                    "No se ha podido abrir la siguiente pantalla."
             );
         }
     }

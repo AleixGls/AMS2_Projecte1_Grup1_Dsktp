@@ -1,327 +1,344 @@
 package grup1.desktop;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javafx.fxml.FXML;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.Button;
 import javafx.scene.paint.Color;
+
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.beans.property.ReadOnlyStringWrapper;
 
 import tools.jackson.databind.ObjectMapper;
 
 public class CtrlMapa {
 
-    // Evento seleccionado desde el listado
-    private CtrlLlistatVendes.Esdeveniment esdeveniment;
+    // IDs de las zonas que se agrupan visualmente.
+    private final Set<String> idsZonasNumeradas = new HashSet<>();
+    private final Set<String> idsZonasGenerales = new HashSet<>();  
 
-    // Recinto seleccionado desde el listado
-    private CtrlLlistatVendes.Recinte recinto;
-
-    // Zonas del recinto seleccionado
-    private CtrlLlistatVendes.Zona zonaNumerada;
-    private CtrlLlistatVendes.Zona zonaGeneral;
-
-    // Lista de asientos recibidos del servidor
+    // Datos recibidos y posiciones utilizadas para dibujar y seleccionar.
     private final List<Asiento> asientos = new ArrayList<>();
+    private final Map<String, Posicion> posicionesAsientos = new HashMap<>();
 
-    // Convertir los datos JSON recibidos del servidor
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // Ocupación de cada zona
+    private int aforoNumerada;
     private int ocupadosNumerada;
+    private int aforoGeneral;
     private int ocupadosGeneral;
 
-    // Tamaño de los asientos
-    private static final double TAMANO_ASIENTO = 18;
-
-    private static final double SEPARACION_ASIENTO = 12;
-    private static final double INICIO_X = 50;
-    private static final double INICIO_Y = 50;
-
-    // Todas las salas tendrán 5 filas
+    // Distribución del mapa: cinco filas y columnas hacia la derecha.
     private static final int FILAS = 5;
+    private static final double TAMANO_ASIENTO = 18;
+    private static final double SEPARACION_ASIENTO = 12;
+    private static final double PASO_ASIENTO = TAMANO_ASIENTO + SEPARACION_ASIENTO;
+    private static final double INICIO_X = 50;
+    private static final double INICIO_Y = 55;
+    private static final double ALTO_ZONA_GENERAL = 100;
 
-    @FXML
-    private Label lblNombreEvento;
+    @FXML private Label lblNombreEvento;
+    @FXML private Label lblNombreRecinto;
+    @FXML private Canvas canvasMapa;
+    @FXML private Label lblAsiento;
+    @FXML private Label lblZona;
+    @FXML private Label lblLocalizador;
+    @FXML private Label lblComprador;
+    @FXML private Label lblCorreo;
+    @FXML private Label lblImporte;
+    @FXML private Label lblEstado;
+    @FXML private Label lblOcupacionNumerada;
+    @FXML private Label lblOcupacionGeneral;
+    @FXML private Button goBackMapa;
 
-    @FXML
-    private Label lblNombreRecinto;
+    @FXML private TableView<EntradaVendida> tableEntradasVendidas;
+    @FXML private TableColumn<EntradaVendida, String> localizadorEntradaMapa;
+    @FXML private TableColumn<EntradaVendida, String> nombreEntradaMapa;
+    @FXML private TableColumn<EntradaVendida, String> tipoEntradaMapa;
+    @FXML private TableColumn<EntradaVendida, String> asientoEntradaMapa;
+    @FXML private TableColumn<EntradaVendida, String> estadoEntradaMapa;
+    @FXML private TableColumn<EntradaVendida, String> fechaEntradaMapa;
 
-    // Canvas donde representaremos los asientos
-    @FXML
-    private Canvas canvasMapa;
+    private final List<EntradaVendida> entradasVendidas = new ArrayList<>();
 
-    // Contenedor de ocupación de las zonas
-    @FXML
-    private VBox contenedorOcupacionZonas;
-
-    // Datos del detalle de venta
-    @FXML
-    private Label lblAsiento;
-
-    @FXML
-    private Label lblZona;
-
-    @FXML
-    private Label lblLocalizador;
-
-    @FXML
-    private Label lblComprador;
-
-    @FXML
-    private Label lblCorreo;
-
-    @FXML
-    private Label lblImporte;
-
-    @FXML
-    private Label lblEstado;
-
-    @FXML
-    private Label lblOcupacionNumerada;
-
-    @FXML
-    private Label lblOcupacionGeneral;
 
     @FXML
     private void initialize() {
+        canvasMapa.setOnMouseClicked(event ->
+                seleccionarAsiento(event.getX(), event.getY())
+        );
+        configurarTablaEntradasInicial();
 
-        // Detectar los clics sobre el Canvas
-        canvasMapa.setOnMouseClicked(event -> {
-            seleccionarAsiento(event.getX(), event.getY());
+        goBackMapa.setOnAction(event -> {
+            goBackMapa.getScene().getWindow().hide();
         });
-
     }
 
-    // Dibujar los asientos recibidos del servidor
+    // Recibir el evento y el recinto seleccionado desde el listado.
+    public void setEsdeveniment(
+            CtrlLlistatVendes.Esdeveniment esdeveniment,
+            CtrlLlistatVendes.Recinte recinto
+    ) {
+        lblNombreEvento.setText(esdeveniment.nom());
+        lblNombreRecinto.setText(recinto.nom());
+
+        limpiarMapa();
+        limpiarZonas();
+
+        // Utilizar inicialmente las zonas del catálogo.
+        // La respuesta del servidor las sustituirá si incluye sus propias zonas.
+        if (recinto.zones() != null) {
+            for (CtrlLlistatVendes.Zona zona : recinto.zones()) {
+                registrarZona(new ZonaMapa(
+                        zona.id(),
+                        zona.nom(),
+                        zona.tipus(),
+                        zona.aforament(),
+                        0
+                ));
+            }
+        }
+
+        actualizarOcupacionZonas();
+        limpiarSeleccion();
+    }
+
+    // Convertir el JSON directamente en records y actualizar el mapa.
+    public void cargarMapa(String json) {
+        try {
+            RespuestaMapa respuesta = objectMapper.readValue(json, RespuestaMapa.class);
+
+            if (!"mapa".equals(respuesta.type())) {
+                throw new IllegalArgumentException(
+                        "La respuesta recibida no corresponde a un mapa."
+                );
+            }
+
+            asientos.clear();
+            posicionesAsientos.clear();
+            cargarEntradasVendidas(respuesta.entradesVenudes());
+
+            // Si el servidor envía las zonas, sustituir las del catálogo.
+            if (respuesta.zonas() != null) {
+                limpiarZonas();
+                respuesta.zonas().forEach(this::registrarZona);
+            }
+
+            // Guardar únicamente asientos pertenecientes a zonas numeradas.
+            Set<String> idsProcesados = new HashSet<>();
+
+            if (respuesta.seients() != null) {
+                for (Asiento asiento : respuesta.seients()) {
+                    if (asiento == null || asiento.id() == null
+                            || asiento.idZona() == null
+                            || !idsZonasNumeradas.contains(asiento.idZona())) {
+                        continue;
+                    }
+
+                    if (idsProcesados.add(asiento.id())) {
+                        asientos.add(asiento);
+                    } else {
+                        System.out.println("Asiento repetido recibido: " + asiento.id());
+                    }
+                }
+            }
+
+            dibujarMapa();
+            actualizarOcupacionZonas();
+            limpiarSeleccion();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            Alert alerta = new Alert(Alert.AlertType.ERROR);
+            alerta.setTitle("Error al cargar el mapa");
+            alerta.setHeaderText("No se ha podido cargar el mapa del recinto");
+            alerta.setContentText(e.getMessage());
+            alerta.show();
+        }
+    }
+
+    // Reiniciar los datos de las zonas antes de volver a registrarlas.
+    private void limpiarZonas() {
+        idsZonasNumeradas.clear();
+        idsZonasGenerales.clear();
+        aforoNumerada = 0;
+        ocupadosNumerada = 0;
+        aforoGeneral = 0;
+        ocupadosGeneral = 0;
+    }
+
+    // Acumular el aforo y la ocupación de cada tipo de zona.
+    private void registrarZona(ZonaMapa zona) {
+        if (zona == null || zona.id() == null || zona.id().isBlank()) {
+            return;
+        }
+
+        if ("numerada".equalsIgnoreCase(zona.tipo())) {
+            if (idsZonasNumeradas.add(zona.id())) {
+                aforoNumerada += zona.aforament();
+                ocupadosNumerada += zona.ocupacion();
+            }
+        } else if ("general".equalsIgnoreCase(zona.tipo())) {
+            if (idsZonasGenerales.add(zona.id())) {
+                aforoGeneral += zona.aforament();
+                ocupadosGeneral += zona.ocupacion();
+            }
+        }
+    }
+
+    // Dibujar todos los asientos como una única cuadrícula de cinco filas.
     private void dibujarMapa() {
+        List<Asiento> asientosNumerados = obtenerAsientosNumerados();
+        int columnas = Math.max(1, (int) Math.ceil(asientosNumerados.size() / (double) FILAS));
+
+        double anchoAsientos = columnas * PASO_ASIENTO - SEPARACION_ASIENTO;
+        double anchoGeneral = Math.max(260, anchoAsientos);
+        double yGeneral = INICIO_Y + FILAS * PASO_ASIENTO + 35;
+        double anchoCanvas = Math.max(750, INICIO_X + anchoGeneral + 50);
+        double altoCanvas = Math.max(600, yGeneral + ALTO_ZONA_GENERAL + 45);
+
+        canvasMapa.setWidth(anchoCanvas);
+        canvasMapa.setHeight(altoCanvas);
 
         GraphicsContext gc = canvasMapa.getGraphicsContext2D();
-
-        gc.clearRect(0, 0, canvasMapa.getWidth(), canvasMapa.getHeight());
+        gc.clearRect(0, 0, anchoCanvas, altoCanvas);
+        posicionesAsientos.clear();
 
         dibujarLeyenda(gc);
+        gc.setFill(Color.BLACK);
+        gc.fillText("ZONA NUMERADA", INICIO_X, 45);
 
-        // Dibujar cada asiento recibido del servidor
-        for (Asiento asiento : asientos) {
+        for (int i = 0; i < asientosNumerados.size(); i++) {
+            Asiento asiento = asientosNumerados.get(i);
+            int fila = asiento.fila() - 1;
+            int columna = asiento.columna() - 1;
+            double x = INICIO_X + columna * PASO_ASIENTO;
+            double y = INICIO_Y + fila * PASO_ASIENTO;
 
-            double x = INICIO_X +
-                    (asiento.columna() - 1) *
-                    (TAMANO_ASIENTO + SEPARACION_ASIENTO);
-
-            double y = INICIO_Y +
-                    (asiento.fila() - 1) *
-                    (TAMANO_ASIENTO + SEPARACION_ASIENTO);
-
+            posicionesAsientos.put(asiento.id(), new Posicion(x, y));
             gc.setFill(obtenerColorAsiento(asiento));
             gc.fillOval(x, y, TAMANO_ASIENTO, TAMANO_ASIENTO);
-
             gc.setStroke(Color.DARKGREEN);
             gc.strokeOval(x, y, TAMANO_ASIENTO, TAMANO_ASIENTO);
         }
 
-        // Dibujar la zona general solamente si existe
-        if (zonaGeneral != null) {
-
-            dibujarZonaGeneral(
-                    gc,
-                    obtenerColumnas(),
-                    TAMANO_ASIENTO,
-                    SEPARACION_ASIENTO,
-                    INICIO_X,
-                    INICIO_Y
-            );
-        }
-
+        dibujarZonaGeneral(gc, INICIO_X, yGeneral, anchoGeneral);
     }
 
-    // Dibujar la zona general del recinto
-    private void dibujarZonaGeneral(
-            GraphicsContext gc,
-            int columnas,
-            double tamaño,
-            double separacion,
-            double inicioX,
-            double inicioY
-    ) {
-
-        // Calcular el ancho de la zona según las columnas de la sala
-        double ancho = columnas * (tamaño + separacion) - separacion;
-
-        // Colocar la zona debajo de los asientos
-        double x = inicioX;
-        double y = inicioY + FILAS * (tamaño + separacion) + 10;
-
-        double alto = 100;
-
-        // Dibujar el rectángulo
+    // Dibujar el único rectángulo de la zona general.
+    private void dibujarZonaGeneral(GraphicsContext gc, double x, double y, double ancho) {
         gc.setFill(Color.LIGHTBLUE);
-        gc.fillRect(x, y, ancho, alto);
-
+        gc.fillRect(x, y, ancho, ALTO_ZONA_GENERAL);
         gc.setStroke(Color.STEELBLUE);
-        gc.strokeRect(x, y, ancho, alto);
+        gc.strokeRect(x, y, ancho, ALTO_ZONA_GENERAL);
 
-        // Mostrar información de la zona
         gc.setFill(Color.BLACK);
+        gc.fillText("ZONA GENERAL", x + ancho / 2 - 45, y + 38);
 
-        gc.fillText(
-                zonaGeneral.nom(),
-                x + ancho / 2 - 45,
-                y + 40
-        );
+        String informacion = idsZonasGenerales.isEmpty()
+                ? "No configurada en la base de datos"
+                : "Aforo: " + aforoGeneral + " | Ocupación: " + ocupadosGeneral;
 
-        gc.fillText(
-                "Aforo: " + zonaGeneral.aforament(),
-                x + ancho / 2 - 35,
-                y + 65
-        );
-
+        gc.fillText(informacion, x + ancho / 2 - informacion.length() * 2.8, y + 65);
     }
 
-    // Dibujar la leyenda de los estados de los asientos
+    // Dibujar la leyenda de los estados de los asientos.
     private void dibujarLeyenda(GraphicsContext gc) {
-
         double y = 20;
-        double tamaño = 12;
+        double tamano = 12;
 
-        // Disponible
         gc.setFill(Color.LIGHTGREEN);
-        gc.fillOval(50, y, tamaño, tamaño);
-
+        gc.fillOval(50, y, tamano, tamano);
         gc.setFill(Color.BLACK);
         gc.fillText("Disponible", 67, y + 10);
 
-        // Vendido
         gc.setFill(Color.INDIANRED);
-        gc.fillOval(180, y, tamaño, tamaño);
-
+        gc.fillOval(180, y, tamano, tamano);
         gc.setFill(Color.BLACK);
         gc.fillText("Vendido", 197, y + 10);
 
-        // Bloqueado
         gc.setFill(Color.GRAY);
-        gc.fillOval(300, y, tamaño, tamaño);
-
+        gc.fillOval(300, y, tamano, tamano);
         gc.setFill(Color.BLACK);
         gc.fillText("Bloqueado", 317, y + 10);
-
     }
 
-    // Identificar el asiento seleccionado
+    // Buscar el asiento situado en las coordenadas del clic.
     private void seleccionarAsiento(double x, double y) {
-
-        // Recorrer todos los asientos
         for (Asiento asiento : asientos) {
-
-            // Calcular la posición del asiento
-            double xAsiento = INICIO_X +
-                    (asiento.columna() - 1) *
-                    (TAMANO_ASIENTO + SEPARACION_ASIENTO);
-
-            double yAsiento = INICIO_Y +
-                    (asiento.fila() - 1) *
-                    (TAMANO_ASIENTO + SEPARACION_ASIENTO);
-
-            // Calcular el centro del asiento
-            double centroX = xAsiento + TAMANO_ASIENTO / 2;
-            double centroY = yAsiento + TAMANO_ASIENTO / 2;
-
-            // Calcular la distancia entre el clic y el centro del asiento
-            double distanciaX = x - centroX;
-            double distanciaY = y - centroY;
-
-            // Comprobar si el clic está dentro del asiento
-            if (distanciaX * distanciaX + distanciaY * distanciaY
-                    <= Math.pow(TAMANO_ASIENTO / 2, 2)) {
-
-                // Mostrar los datos básicos del asiento
-                lblAsiento.setText(asiento.id());
-                lblZona.setText(obtenerNombreZona(asiento.idZona()));
-
-                // Limpiar los datos de la venta anterior
-                limpiarDetalleVenta();
-
-                // Comprobar si el asiento está bloqueado
-                if (esBloqueado(asiento)) {
-
-                    lblEstado.setText("Bloqueado");
-
-                // Comprobar si el asiento está vendido
-                } else if (asiento.vendido()) {
-
-                    lblEstado.setText("Vendido");
-
-                    // Mostrar los datos de la venta
-                    mostrarVenta(asiento);
-
-                // Si no está bloqueado ni vendido, está disponible
-                } else {
-
-                    lblEstado.setText("Disponible");
-
-                }
-
-                return;
-
+            Posicion posicion = posicionesAsientos.get(asiento.id());
+            if (posicion == null) {
+                continue;
             }
 
+            double centroX = posicion.x() + TAMANO_ASIENTO / 2;
+            double centroY = posicion.y() + TAMANO_ASIENTO / 2;
+            double dx = x - centroX;
+            double dy = y - centroY;
+
+            if (dx * dx + dy * dy <= Math.pow(TAMANO_ASIENTO / 2, 2)) {
+                lblAsiento.setText(asiento.id());
+                lblZona.setText("Zona numerada");
+                limpiarDatosVenta();
+
+                if (esBloqueado(asiento)) {
+                    lblEstado.setText("Bloqueado");
+                } else if (asiento.vendido()) {
+                    lblEstado.setText("Vendido");
+                    mostrarVenta(asiento);
+                } else {
+                    lblEstado.setText("Disponible");
+                }
+                return;
+            }
         }
-
-        System.out.println("No se ha seleccionado ningún asiento.");
-
     }
 
-    // Actualizar la ocupación de las zonas
+    // Ordenar los asientos para que la distribución sea estable.
+    private List<Asiento> obtenerAsientosNumerados() {
+        return asientos.stream()
+                .filter(asiento -> idsZonasNumeradas.contains(asiento.idZona()))
+                .sorted(Comparator.comparing(Asiento::idZona)
+                        .thenComparingInt(Asiento::fila)
+                        .thenComparingInt(Asiento::columna)
+                        .thenComparing(Asiento::id))
+                .toList();
+    }
+
+    // Actualizar la ocupación mostrada para los dos tipos de zona.
     private void actualizarOcupacionZonas() {
+        lblOcupacionNumerada.setText(aforoNumerada > 0
+                ? "Zona numerada: " + ocupadosNumerada + "/" + aforoNumerada
+                : "Zona numerada: No disponible");
 
-        // Mostrar ocupación de la zona numerada
-        if (zonaNumerada != null) {
-
-            lblOcupacionNumerada.setText(
-                    zonaNumerada.nom() + ": " +
-                    ocupadosNumerada + "/" + zonaNumerada.aforament()
-            );
-
-        } else {
-
-            lblOcupacionNumerada.setText("Zona numerada: No disponible");
-        }
-
-        // Mostrar ocupación de la zona general
-        if (zonaGeneral != null) {
-
-            lblOcupacionGeneral.setText(
-                    zonaGeneral.nom() + ": " +
-                    ocupadosGeneral + "/" + zonaGeneral.aforament()
-            );
-
-        } else {
-
-            lblOcupacionGeneral.setText("Zona general: No disponible");
-        }
-
+        lblOcupacionGeneral.setText(!idsZonasGenerales.isEmpty()
+                ? "Zona general: " + ocupadosGeneral + "/" + aforoGeneral
+                : "Zona general: No configurada en BBDD");
     }
 
-    // Limpiar los datos de la venta
-    private void limpiarDetalleVenta() {
-
+    // Limpiar los datos asociados a la venta, sin borrar el asiento seleccionado.
+    private void limpiarDatosVenta() {
         lblLocalizador.setText("-");
         lblComprador.setText("-");
         lblCorreo.setText("-");
         lblImporte.setText("-");
-
     }
 
-    // Mostrar los datos de una venta
+    // Mostrar los datos de la venta asociada al asiento.
     private void mostrarVenta(Asiento asiento) {
-
         Venta venta = asiento.venta();
-
         if (venta == null) {
             return;
         }
@@ -329,340 +346,121 @@ public class CtrlMapa {
         lblLocalizador.setText(venta.localizador());
         lblComprador.setText(venta.comprador());
         lblCorreo.setText(venta.correo());
-
-        lblImporte.setText(
-                String.format("%.2f", venta.importe()).replace('.', ',') + " €"
-        );
-
+        lblImporte.setText(String.format("%.2f", venta.importe()).replace('.', ',') + " €");
     }
 
-    // Obtener el nombre de una zona a partir de su ID
-    private String obtenerNombreZona(String idZona) {
-
-        for (CtrlLlistatVendes.Zona zona : recinto.zones()) {
-
-            if (zona.id().equals(idZona)) {
-                return zona.nom();
-            }
-
-        }
-
-        return idZona;
-
-    }
-
-    // Comprobar si un asiento está bloqueado
+    // Comprobar si el asiento está bloqueado.
     private boolean esBloqueado(Asiento asiento) {
-
         return "bloquejat".equalsIgnoreCase(asiento.estat())
                 || "bloqueado".equalsIgnoreCase(asiento.estat());
-
     }
 
-    // Obtener el color correspondiente al estado del asiento
+    // Obtener el color según el estado del asiento.
     private Color obtenerColorAsiento(Asiento asiento) {
-
         if (esBloqueado(asiento)) {
             return Color.GRAY;
         }
-
-        if (asiento.vendido()) {
-            return Color.INDIANRED;
-        }
-
-        return Color.LIGHTGREEN;
-
+        return asiento.vendido() ? Color.INDIANRED : Color.LIGHTGREEN;
     }
 
-    // Obtener el número de columnas de la sala
-    private int obtenerColumnas() {
-
-        // Usar las columnas reales de los asientos recibidos
-        int columnas = asientos.stream()
-                .mapToInt(Asiento::columna)
-                .max()
-                .orElse(0);
-
-        // Si no hay asientos, calcular las columnas según el aforo
-        if (columnas == 0 && zonaNumerada != null) {
-            columnas = (int) Math.ceil(
-                    (double) zonaNumerada.aforament() / FILAS
-            );
-        }
-
-        return Math.max(1, columnas);
-    }
-
-    // Recibir el evento y el recinto seleccionado
-    public void setEsdeveniment(
-            CtrlLlistatVendes.Esdeveniment esdeveniment,
-            CtrlLlistatVendes.Recinte recinto
-    ) {
-
-        this.esdeveniment = esdeveniment;
-        this.recinto = recinto;
-
-        // Mostrar los datos del evento y del recinto
-        lblNombreEvento.setText(esdeveniment.nom());
-        lblNombreRecinto.setText(recinto.nom());
-
-        // Identificar las zonas del recinto
-        zonaNumerada = null;
-        zonaGeneral = null;
-
-        System.out.println("================================");
-        System.out.println("MAPA: " + esdeveniment.id());
-        System.out.println("RECINTO: " + recinto.id() + " - " + recinto.nom());
-
-        if (recinto.zones() == null || recinto.zones().isEmpty()) {
-            throw new IllegalStateException(
-                    "El recinto no tiene zonas registradas."
-            );
-        }
-
-        for (CtrlLlistatVendes.Zona zona : recinto.zones()) {
-
-            System.out.println(
-                    "Zona: " + zona.id() +
-                    " - " + zona.nom() +
-                    " - Tipo: " + zona.tipus()
-            );
-
-            if ("numerada".equalsIgnoreCase(zona.tipus())
-                    && zonaNumerada == null) {
-
-                zonaNumerada = zona;
-
-            } else if ("general".equalsIgnoreCase(zona.tipus())
-                    && zonaGeneral == null) {
-
-                zonaGeneral = zona;
-            }
-        }
-
-        // Informar de las zonas disponibles
-        System.out.println("Zona numerada: " +
-                (zonaNumerada != null ? zonaNumerada.nom() : "No disponible"));
-
-        System.out.println("Zona general: " +
-                (zonaGeneral != null ? zonaGeneral.nom() : "No disponible"));
-
-        System.out.println("================================");
-
-        // Limpiar datos anteriores
-        asientos.clear();
-
-        ocupadosNumerada = 0;
-        ocupadosGeneral = 0;
-
+    // Limpiar la selección y los datos de la venta.
+    private void limpiarSeleccion() {
         lblAsiento.setText("-");
         lblZona.setText("-");
         lblEstado.setText("-");
-
-        limpiarDetalleVenta();
-
+        limpiarDatosVenta();
     }
 
-    // Recibir y procesar los datos del servidor
-    public void cargarMapa(String json) {
-
-        try {
-
-            Map<?, ?> respuesta = objectMapper.readValue(json, Map.class);
-
-            // Comprobar que la respuesta corresponde a un mapa
-            if (!"mapa".equals(respuesta.get("type"))) {
-
-                throw new IllegalArgumentException(
-                        "La respuesta recibida no corresponde a un mapa."
-                );
-
-            }
-
-            // Limpiar los datos anteriores
-            asientos.clear();
-
-            ocupadosNumerada = 0;
-            ocupadosGeneral = 0;
-
-            // Obtener la ocupación de las zonas
-            Object datosZonas = respuesta.get("zonas");
-
-            if (datosZonas instanceof List<?> zonas) {
-
-                for (Object objeto : zonas) {
-
-                    if (!(objeto instanceof Map<?, ?> zona)) {
-                        continue;
-                    }
-
-                    String idZona = String.valueOf(zona.get("id"));
-
-                    int ocupacion = obtenerEntero(zona.get("ocupacion"));
-
-                    // Comprobar la ocupación de la zona numerada
-                    if (zonaNumerada != null && zonaNumerada.id().equals(idZona)) {
-                        ocupadosNumerada = ocupacion;
-                    }
-
-                    // Comprobar la ocupación de la zona general
-                    if (zonaGeneral != null && zonaGeneral.id().equals(idZona)) {
-                        ocupadosGeneral = ocupacion;
-                    }
-
-                }
-
-            }
-
-            // Obtener los asientos recibidos del servidor
-            Object datosAsientos = respuesta.get("seients");
-
-            // Compatibilidad por si el servidor utiliza la clave "asientos"
-            if (datosAsientos == null) {
-                datosAsientos = respuesta.get("asientos");
-            }
-
-            if (datosAsientos instanceof List<?> listaAsientos) {
-
-                for (Object objeto : listaAsientos) {
-
-                    if (!(objeto instanceof Map<?, ?> datos)) {
-                        continue;
-                    }
-
-                    Venta venta = null;
-
-                    // Obtener la venta si el asiento está vendido
-                    if (datos.get("venta") instanceof Map<?, ?> datosVenta) {
-
-                        venta = new Venta(
-                                obtenerTexto(datosVenta.get("localizador"), "-"),
-                                obtenerTexto(datosVenta.get("comprador"), "-"),
-                                obtenerTexto(datosVenta.get("correo"), "-"),
-                                obtenerDecimal(datosVenta.get("importe"))
-                        );
-
-                    }
-
-                    // Crear el asiento con los datos recibidos
-                    Asiento asiento = new Asiento(
-                            obtenerTexto(datos.get("id"), "-"),
-                            obtenerEntero(datos.get("fila")),
-                            obtenerEntero(datos.get("columna")),
-                            obtenerTexto(datos.get("idZona"), ""),
-                            obtenerTexto(datos.get("estat"), "lliure"),
-                            Boolean.TRUE.equals(datos.get("vendido")),
-                            venta
-                    );
-
-                    asientos.add(asiento);
-
-                }
-
-            }
-
-            // Actualizar la interfaz
-            dibujarMapa();
-            actualizarOcupacionZonas();
-
-            // Limpiar el detalle de venta
-            lblAsiento.setText("-");
-            lblZona.setText("-");
-            lblEstado.setText("-");
-
-            limpiarDetalleVenta();
-
-            System.out.println("Mapa cargado correctamente.");
-            System.out.println("Asientos recibidos: " + asientos.size());
-
-        } catch (Exception e) {
-
-            e.printStackTrace();
-
-            Alert alerta = new Alert(Alert.AlertType.ERROR);
-
-            alerta.setTitle("Error al cargar el mapa");
-            alerta.setHeaderText("No se ha podido cargar el mapa del recinto");
-            alerta.setContentText(e.getMessage());
-
-            alerta.show();
-
-        }
-
+    // Limpiar los datos del mapa anterior.
+    private void limpiarMapa() {
+        asientos.clear();
+        posicionesAsientos.clear();
+        canvasMapa.getGraphicsContext2D().clearRect(
+                0, 0, canvasMapa.getWidth(), canvasMapa.getHeight()
+        );
     }
 
-    // Convertir un valor JSON a entero
-    private int obtenerEntero(Object valor) {
+    private void configurarTablaEntradasInicial() { 
 
-        if (valor instanceof Number numero) {
-            return numero.intValue();
-        }
+        localizadorEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().localizador()));
 
-        if (valor != null) {
+        nombreEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().comprador()));
 
-            try {
-                return Integer.parseInt(valor.toString());
-            } catch (NumberFormatException e) {
-                return 0;
-            }
+        tipoEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().tipoEntrada()));
 
-        }
+        asientoEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().asiento()));
 
-        return 0;
+        estadoEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().estadoEntrada()));
 
+        fechaEntradaMapa.setCellValueFactory(dato ->
+                new ReadOnlyStringWrapper(dato.getValue().fechaHoraCompra()));
     }
 
-    // Convertir un valor JSON a decimal
-    private double obtenerDecimal(Object valor) {
+    private void cargarEntradasVendidas(List<EntradaVendida> entradas) {
+        tableEntradasVendidas.getItems().clear();
 
-        if (valor instanceof Number numero) {
-            return numero.doubleValue();
+        if (entradas != null) {
+            tableEntradasVendidas.getItems().setAll(entradas);
         }
-
-        if (valor != null) {
-
-            try {
-                return Double.parseDouble(valor.toString());
-            } catch (NumberFormatException e) {
-                return 0.0;
-            }
-
-        }
-
-        return 0.0;
-
     }
 
-    // Obtener un texto del JSON evitando valores nulos
-    private String obtenerTexto(Object valor, String valorPorDefecto) {
-
-        if (valor == null) {
-            return valorPorDefecto;
-        }
-
-        return String.valueOf(valor);
-
-    }
-
-    // Estructura para almacenar la información de cada asiento
-    private record Asiento(
-            String id,
-            int fila,
-            int columna,
-            String idZona,
-            String estat,
-            boolean vendido,
-            Venta venta
+    // Records utilizados directamente por Jackson para convertir el JSON.
+    public record RespuestaMapa(
+        String type,
+        String esdeveniment,
+        String recinte,
+        List<ZonaMapa> zonas,
+        List<Asiento> seients,
+        List<EntradaVendida> entradesVenudes
     ) {
     }
 
-    // Estructura para almacenar la información de una venta
-    private record Venta(
-            String localizador,
-            String comprador,
-            String correo,
-            double importe
+    public record ZonaMapa(
+        String id,
+        String nombre,
+        String tipo,
+        int aforament,
+        int ocupacion
     ) {
     }
 
+    public record Asiento(
+        String id,
+        int fila,
+        int columna,
+        String idZona,
+        String nombreZona,
+        String estat,
+        boolean vendido,
+        Venta venta
+    ) {
+    }
+
+    public record Venta(
+        String localizador,
+        String idVenta,
+        String comprador,
+        String correo,
+        double importe,
+        String estadoEntrada
+    ) {
+    }
+
+    public record EntradaVendida(
+        String fechaHoraCompra,
+        String localizador,
+        String tipoEntrada,
+        String asiento,
+        String comprador,
+        String estadoEntrada
+    ) {
+    }
+
+    public record Posicion(double x, double y) {
+    }
 }
